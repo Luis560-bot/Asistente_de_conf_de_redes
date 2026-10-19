@@ -16,9 +16,19 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
+  it('/ (GET) devuelve la página', async () => {
+    const res = await request(app.getHttpServer())
       .get('/')
+      .expect(200)
+      .expect('Content-Type', /html/);
+
+    expect(res.text).toContain('Conecta el');
+    expect(res.text).toContain('NetBot');
+  });
+
+  it('/api/hello (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/api/hello')
       .expect(200)
       .expect('Hello World!');
   });
