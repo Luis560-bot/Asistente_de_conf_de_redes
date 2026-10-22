@@ -16,14 +16,8 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET) devuelve la página', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Content-Type', /html/);
-
-    expect(res.text).toContain('Conecta el');
-    expect(res.text).toContain('NetBot');
+  it('/ (GET) ya no sirve el frontend', () => {
+    return request(app.getHttpServer()).get('/').expect(404);
   });
 
   it('/api/hello (GET)', () => {
