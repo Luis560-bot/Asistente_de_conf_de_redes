@@ -1,0 +1,90 @@
+Manual de referencia de ejemplo: Cisco IOS
+
+IDENTIFICACIÓN Y RESPALDO
+
+Mostrar versión e información del equipo:
+show version
+
+Mostrar inventario de hardware:
+show inventory
+
+Ver configuración en ejecución:
+show running-config
+
+Guardar la configuración activa:
+copy running-config startup-config
+
+Advertencia: respalda la configuración y valida el acceso por consola antes de cambios que puedan interrumpir el servicio o el acceso remoto.
+
+INTERFACES Y CAPA FÍSICA
+
+Resumen de interfaces, direcciones y estado:
+show ip interface brief
+
+Detalles de una interfaz:
+show interfaces GigabitEthernet0/1
+
+Mostrar estado de VLAN y puertos:
+show interfaces status
+
+VLAN
+
+Mostrar VLAN configuradas:
+show vlan brief
+
+Crear una VLAN y asignar nombre (modo de configuración global):
+vlan 20
+ name SOPORTE
+
+Asignar un puerto de acceso a VLAN 20:
+interface GigabitEthernet0/2
+ switchport mode access
+ switchport access vlan 20
+
+RUTAS ESTÁTICAS Y ENRUTAMIENTO
+
+Mostrar tabla de enrutamiento IPv4:
+show ip route
+
+Agregar una ruta estática (modo de configuración global):
+ip route 192.0.2.0 255.255.255.0 198.51.100.1
+
+Mostrar vecinos y estado de OSPF:
+show ip ospf neighbor
+show ip protocols
+
+Ejemplo básico de OSPF en área 0 (modo de configuración global):
+router ospf 1
+ network 192.0.2.0 0.0.0.255 area 0
+
+NAT Y FIREWALL
+
+Mostrar traducciones NAT activas:
+show ip nat translations
+
+Mostrar estadísticas NAT:
+show ip nat statistics
+
+Ejemplo conceptual de PAT (confirma interfaces y direccionamiento antes de usar):
+access-list 1 permit 192.0.2.0 0.0.0.255
+ip nat inside source list 1 interface GigabitEthernet0/0 overload
+interface GigabitEthernet0/1
+ ip nat inside
+interface GigabitEthernet0/0
+ ip nat outside
+
+PRUEBAS Y REGISTROS
+
+Probar conectividad:
+ping 192.0.2.1
+
+Seguir saltos hacia un destino:
+traceroute 192.0.2.1
+
+Mostrar mensajes del sistema:
+show logging
+
+Notas:
+- La disponibilidad de comandos depende de la plataforma y versión de IOS.
+- Verifica primero la capa física, luego IP, enrutamiento y finalmente servicios/firewall.
+- Los ejemplos de VLAN, OSPF y NAT requieren adaptar interfaces, redes y topología.

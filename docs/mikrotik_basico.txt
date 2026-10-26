@@ -1,0 +1,73 @@
+Manual de referencia de ejemplo: MikroTik RouterOS
+
+IDENTIFICACIÓN Y RESPALDO
+
+Ver la versión instalada:
+/system resource print
+
+Ver identidad y datos generales del equipo:
+/system identity print
+/system routerboard print
+
+Crear un respaldo binario:
+/system backup save name=respaldo-antes-de-cambios
+
+Exportar la configuración en texto:
+/export file=configuracion-antes-de-cambios
+
+Advertencia: antes de aplicar cambios que puedan cortar el acceso remoto, guarda un respaldo y confirma que tienes una vía alternativa de administración.
+
+INTERFACES Y CAPA FÍSICA
+
+Mostrar interfaces y su estado:
+/interface print
+
+Mostrar estadísticas de interfaces:
+/interface print stats
+
+Mostrar enlaces Ethernet:
+/interface ethernet monitor ether1 once
+
+DIRECCIONAMIENTO IP
+
+Listar direcciones configuradas:
+/ip address print
+
+Listar rutas IP:
+/ip route print
+
+Comprobar conectividad con una dirección:
+/ping 192.0.2.1 count=5
+
+Ver la tabla ARP:
+/ip arp print
+
+DNS Y SERVICIOS
+
+Mostrar la configuración DNS:
+/ip dns print
+
+Consultar leases DHCP:
+/ip dhcp-server lease print
+
+Mostrar servidores DHCP:
+/ip dhcp-server print
+
+REGLAS Y DIAGNÓSTICO
+
+Mostrar reglas de firewall:
+/ip firewall filter print
+
+Mostrar reglas NAT:
+/ip firewall nat print
+
+Ver registro del sistema:
+/log print
+
+Ver conexiones activas:
+/ip firewall connection print
+
+Notas:
+- Confirma la versión de RouterOS y el modelo antes de cambiar la sintaxis o la configuración.
+- Las reglas de firewall y los cambios de direccionamiento pueden interrumpir conexiones.
+- Revisa el estado de interfaces y direcciones antes de diagnosticar rutas, servicios o firewall.
