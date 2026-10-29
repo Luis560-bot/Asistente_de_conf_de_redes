@@ -5,6 +5,7 @@
 *.py[cod]
 **/.venv/
 **/venv/
+.venv311/
 **/chroma_db/
 .cache/
 *.log

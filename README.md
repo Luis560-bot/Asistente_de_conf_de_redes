@@ -1,6 +1,6 @@
 # NetAssist
 
-Prototipo educativo de asistente de soporte para MikroTik RouterOS y Cisco IOS. Usa FastAPI, recuperación local de manuales (RAG), Claude con failover a Gemini y una interfaz web en HTML, CSS y JavaScript sin frameworks.
+Prototipo educativo de asistente de soporte para MikroTik RouterOS y Cisco IOS. Usa FastAPI, recuperación local de manuales (RAG), Gemini con failover a Groq y una interfaz web en HTML, CSS y JavaScript sin frameworks.
 
 ## Estructura
 
@@ -30,7 +30,7 @@ netassist/
 
 - Python 3.11 o superior.
 - Acceso a Internet durante la instalación y la primera descarga del modelo de embeddings.
-- Una clave de Anthropic y/o Google AI Studio para obtener respuestas de LLM. Se recomienda configurar ambas para habilitar el failover.
+- Claves de Google AI Studio y Groq para obtener respuestas de LLM y habilitar el failover.
 
 ## Instalación y ejecución
 
@@ -68,7 +68,7 @@ netassist/
    cp .env.example .env
    ```
 
-   Completa `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL` para Claude, y `GEMINI_API_KEY` y `GEMINI_MODEL` para Gemini. NetAssist intenta primero Claude y usa Gemini ante errores o timeout de Claude. Si un proveedor no se configura, se intentará el otro. Los nombres de modelo son configurables; usa modelos habilitados para tus cuentas y APIs.
+   Completa `GEMINI_API_KEY` y `GEMINI_MODEL` para Gemini, y `GROQ_API_KEY` y `GROQ_MODEL` para Groq. NetAssist intenta primero Gemini y usa Groq ante errores o timeout. Si un proveedor no se configura, se intentará el otro. Obtén las claves en [Google AI Studio](https://aistudio.google.com/) y [Groq Console](https://console.groq.com/). Los nombres de modelo son configurables; usa modelos habilitados para tus cuentas y APIs.
 
 5. Coloca manuales `.txt` o `.pdf` en `docs/`. El prototipo incluye dos TXT de ejemplo. Los PDFs se indexan usando el texto que pueda extraerse de sus páginas; documentos escaneados requieren OCR previo.
 6. Inicia el backend desde la carpeta `netassist`:
@@ -116,8 +116,8 @@ El backend acepta `.txt` y `.pdf`, divide el texto en fragmentos de 500 palabras
 4. **Faltan datos del equipo:** pregunta por un cambio de configuración sin marca, modelo ni versión; NetAssist debe preguntar esos datos antes de proponer el cambio.
 5. **Advertencia de riesgo:** consulta cómo reiniciar o cambiar acceso remoto; la respuesta debe advertir el riesgo antes del comando y recomendar respaldo.
 6. **Derivación humana:** reporta una falla física o un caso que persiste tras varios intentos; la respuesta debe recomendar contacto y mostrar la información configurada.
-7. **Failover con API primaria caída:** simula error o timeout de Claude; la solicitud debe intentar Gemini y responder sin revelar claves.
-8. **Todas las APIs caídas / error de servicio:** simula fallos en Claude y Gemini o detén el backend; la interfaz debe mostrar un mensaje amable y una vía de contacto humano, sin quedarse en estado «escribiendo».
+7. **Failover con API primaria caída:** simula error o timeout de Gemini; la solicitud debe intentar Groq y responder sin revelar claves.
+8. **Todas las APIs caídas / error de servicio:** simula fallos en Gemini y Groq o detén el backend; la interfaz debe mostrar un mensaje amable y una vía de contacto humano, sin quedarse en estado «escribiendo».
 
 ## Límites del prototipo
 
