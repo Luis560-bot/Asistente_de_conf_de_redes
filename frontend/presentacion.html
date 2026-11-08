@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10243a">
+  <title>NetAssist | Presentación de Conceptos de Redes</title>
+  <link rel="stylesheet" href="presentacion.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="presentacion.html" aria-label="NetAssist, inicio">
+        <span class="brand-mark" aria-hidden="true">N</span>
+        <span><strong>NetAssist</strong><small>Conceptos de redes</small></span>
+      </a>
+      <div class="header-actions">
+        <a href="chat.html" class="button button-quiet">Ir al chat</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-bg">
+        <svg class="network-svg" aria-hidden="true" focusable="false" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="gradient-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0a1626"/>
+              <stop offset="100%" stop-color="#1a52a8"/>
+            </linearGradient>
+            <pattern id="grid-pattern" width="44" height="44" patternUnits="userSpaceOnUse">
+              <path d="M 44 0 L 0 0 0 44" fill="none" stroke="#2f5c9e" stroke-width="1" opacity="0.35"/>
+            </pattern>
+          </defs>
+          <rect width="1200" height="600" fill="url(#gradient-sky)"/>
+          <rect width="1200" height="600" fill="url(#grid-pattern)"/>
+          <g fill="none" stroke="#ff6b35" stroke-width="2" opacity="0.75">
+            <path d="M 180 430 Q 320 180 460 430"/>
+            <path d="M 460 430 Q 620 210 780 430"/>
+            <path d="M 780 430 Q 900 260 1040 430"/>
+            <path d="M 180 430 L 1040 430" stroke-dasharray="6 8" opacity="0.4"/>
+            <path d="M 320 300 L 320 430"/>
+            <path d="M 620 320 L 620 430"/>
+            <path d="M 900 330 L 900 430"/>
+          </g>
+          <g fill="#22d3ee">
+            <circle cx="180" cy="430" r="7"/>
+            <circle cx="460" cy="430" r="7"/>
+            <circle cx="780" cy="430" r="7"/>
+            <circle cx="1040" cy="430" r="7"/>
+            <circle cx="320" cy="300" r="5"/>
+            <circle cx="620" cy="320" r="5"/>
+            <circle cx="900" cy="330" r="5"/>
+          </g>
+        </svg>
+      </div>
+      <div class="hero-content">
+        <h1>Las capas invisibles que conectan nuestro mundo</h1>
+        <p>Un recorrido por los fundamentos que hacen posible la comunicación entre dispositivos</p>
+        <a href="#main-content" class="button button-contact" aria-label="Explorar secciones">Explorar</a>
+      </div>
+    </section>
+
+    <main class="content" aria-label="Contenido principal">
+      <div class="skip-link">
+        <a href="#main-content">Saltar al contenido principal</a>
+      </div>
+
+      <section id="main-content" class="section section-intro">
+        <div class="section-header">
+          <h2>¿Qué es una red de computadoras?</h2>
+          <p>Definición simple: dos o más dispositivos conectados que comparten recursos.</p>
+        </div>
+        <div class="section-content">
+          <p>En su esencia, una red permite que dispositivos electrónicos se comuniquen intercambiando datos a través de un medio físico o inalámbrico. El objetivo puede ser tan simple como compartir un archivo o tan complejo como habilitar una videollamada global.</p>
+          <p>Lo fascinante es que, aunque no los veamos, seguimos dependiendo de ellas cada minuto: el correo electrónico, las transmisiones en vivo, las transferencias bancarias, todo pasa por redes.</p>
+        </div>
+      </section>
+
+      <section class="section section-osi" aria-label="Modelo OSI">
+        <div class="section-header">
+          <h2>El modelo OSI: la arquitectura estándar</h2>
+          <p>Los siete niveles que definen cómo fluyen los datos.</p>
+        </div>
+        <div class="section-content">
+          <div class="osi-levels">
+            <div class="osi-level">
+              <div class="level-number">1</div>
+              <div class="level-name">Capa Física</div>
+              <div class="level-desc">Señales eléctricas, luz, cables</div>
+            </div>
+            <div class="osi-level">
+              <div class="level-number">2</div>
+              <div class="level-name">Capa Enlace de Datos</div>
+              <div class="level-desc">Frameados, direcciones MAC</div>
+            </div>
+            <div class="osi-level">
+              <div class="level-number">3</div>
+              <div class="level-name">Capa Red</div>
+              <div class="level-desc">Ruteo, direcciones IP</div>
+            </div>
+            <div class="osi-level">
+              <div class="level-number">4</div>
+              <div class="level-name">Capa Transporte</div>
+              <div class="level-desc">TCP/UDP, puertos</div>
+            </div>
+            <div class="osi-level">
+              <div class="level-number">5</div>
+              <div class="level-name">Capa Sesión</div>
+              <div class="level-desc">Gestión de sesiones</div>
+            </div>
+            <div class="osi-level">
+              <div class="level-number">6</div>
+              <div class="level-name">Capa Presentación</div>
+              <div class="level-desc">Cifrado, compresión</div>
+            </div>
+            <div class="osi-level">
+              <div class="level-number">7</div>
+              <div class="level-name">Capa Aplicación</div>
+              <div class="level-desc">HTTP, SMTP, DNS</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-topology" aria-label="Topologías de red">
+        <div class="section-header">
+          <h2>Topologías: cómo se organizan los dispositivos</h2>
+          <p>La disposición física o lógica de una red.</p>
+        </div>
+        <div class="section-content">
+          <p>La topología define no solo la conexión, sino también qué tan resistente es la red a fallos:</p>
+          <ul class="plain-list">
+            <li><strong>Bus:</strong> Todos los dispositivos comparten un medio común. Fácil de instalar, pero un fallo puede derribar toda la red.</li>
+            <li><strong>Estrella:</strong> Todo se conecta a un central (switch/router). Fallo de un enlace no afecta al resto, pero depende del central.</li>
+            <li><strong>Anillo:</strong> Los datos viajan de dispositivo en dispositivo. Útil para redes de alta velocidad con token passing.</li>
+            <li><strong>Malla:</strong> Múltiples rutas entre nodos. La red más resistente: si un camino falla, los datos encuentran otro.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section section-protocols" aria-label="Protocolos comunes">
+        <div class="section-header">
+          <h2>Protocolos que todo técnico debe conocer</h2>
+          <p>Los acuerdos que hacen posible la comunicación.</p>
+        </div>
+        <div class="section-content">
+          <div class="protocol-cards">
+            <div class="protocol-card">
+              <h3>HTTP/HTTPS</h3>
+              <p>El protocolo de la web. HTTPS añade cifrado mediante TLS para proteger la información en tránsito.</p>
+            </div>
+            <div class="protocol-card">
+              <h3>DNS</h3>
+              <p>El directorio de internet. Traduce nombres de dominio a direcciones IP para que los humanos no memoricen números.</p>
+            </div>
+            <div class="protocol-card">
+              <h3>SSH</h3>
+              <p>Shell seguro. Proporciona acceso remoto cifrado a equipos de red y servidores.</p>
+            </div>
+            <div class="protocol-card">
+              <h3>SNMP</h3>
+              <p>Simple Network Management Protocol. Para monitorear y gestionar dispositivos de red.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      <p>Ilustración conceptual • NetAssist • 2026</p>
+    </footer>
+  </main>
+
+  <a href="chat.html" class="float-button" aria-label="Abrir el asistente NetAssist" title="Abrir el asistente NetAssist">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+  </a>
+</body>
+</html>

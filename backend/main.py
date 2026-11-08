@@ -1,11 +1,12 @@
 """API FastAPI de NetAssist."""
-
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from .config import FRONTEND_ORIGIN, SUPPORT_CONTACT
@@ -40,6 +41,24 @@ app.add_middleware(
 )
 
 
+## Rutas de presentación (deben ir antes que el chat para prioridad)
+@app.get("/Presentacion", include_in_schema=False)
+async def presentation() -> FileResponse:
+    """Sirve la presentación de conceptos de redes cuando se accede a /Presentacion."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(base_dir, "frontend", "presentacion.html")
+    return FileResponse(file_path)
+
+
+@app.get("/", include_in_schema=False)
+async def presentation_root() -> FileResponse:
+    """Sirve la presentación en la raíz (/) en lugar del chatbot."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(base_dir, "frontend", "presentacion.html")
+    return FileResponse(file_path)
+
+
+## Modelos de datos
 class Mensaje(BaseModel):
     """Mensaje permitido en el historial enviado por el navegador."""
 
@@ -60,6 +79,7 @@ class RespuestaChat(BaseModel):
     contact: str
 
 
+## Rutas de salud y estado
 @app.get("/health")
 async def health(request: Request) -> dict[str, object]:
     """Indica si la API y el índice local están disponibles."""
@@ -93,6 +113,7 @@ async def reindexar(request: Request) -> dict[str, int]:
         ) from error
 
 
+## Rutas de chat
 @app.post("/chat", response_model=RespuestaChat)
 async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
     """Recupera manuales y genera una respuesta con el historial recibido."""
