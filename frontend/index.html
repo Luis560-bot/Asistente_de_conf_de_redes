@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101e2c"><title>NetAssist | Laboratorio de redes</title>
-  <link rel="stylesheet" href="style.css"><script src="app.js?v=6" defer></script>
+  <link rel="stylesheet" href="style.css?v=nexo"><script src="app.js?v=nexo" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -53,10 +53,10 @@
       <p class="page-footer">NetAssist · Un laboratorio para entender lo que configuras.</p>
     </main>
   </div>
-  <button id="chat-launcher" type="button" aria-controls="chat-panel" aria-expanded="false"><span class="chat-logo">N</span><span>Tu asistente <small id="launcher-context">Listo para acompañarte</small></span><span aria-hidden="true">↗</span></button>
+  <button id="chat-launcher" type="button" aria-controls="chat-panel" aria-expanded="false" aria-label="Conversar con Nexo, tu asistente de redes"><span class="nexo-launcher-art" aria-hidden="true"><img src="nexo.svg" alt="" width="100" height="100"></span><span class="nexo-launcher-label"><strong>¡Hola! Soy Nexo</strong><small id="launcher-context">¿Vemos tu red juntos?</small></span></button>
   <section id="chat-panel" class="chat-panel" aria-label="Asistente contextual" hidden>
-    <header class="chat-heading"><span class="chat-logo">N</span><div><h2>Asistente NetAssist</h2><p id="chat-context">Sin práctica abierta</p></div><button id="expand-chat" class="icon-button" type="button" aria-label="Ampliar chat" aria-expanded="false">⤢</button><button id="minimize-chat" class="icon-button" type="button" aria-label="Minimizar chat">−</button></header>
-    <div class="chat-toolbar"><span>Conversación de esta pestaña</span><button id="new-chat-button" type="button">Limpiar chat</button></div>
+    <header class="chat-heading"><span class="nexo-header-art" aria-hidden="true"><img src="nexo.svg" alt="" width="54" height="54"></span><div><h2>Nexo <span class="nexo-brand">/ NetAssist</span></h2><p id="chat-context">Sin práctica abierta</p></div><button id="expand-chat" class="icon-button" type="button" aria-label="Ampliar chat" aria-expanded="false">⤢</button><button id="minimize-chat" class="icon-button" type="button" aria-label="Minimizar chat">−</button></header>
+    <div class="chat-toolbar"><span><span class="nexo-presence" aria-hidden="true"></span> Tu compañero de laboratorio</span><button id="new-chat-button" type="button">Limpiar chat</button></div>
     <div id="messages" class="messages" aria-live="polite" aria-label="Mensajes"></div>
     <div id="typing-indicator" class="typing" role="status" hidden>NetAssist está preparando una respuesta…</div>
     <form id="chat-form" class="composer"><label class="sr-only" for="message-input">Tu consulta al asistente</label><textarea id="message-input" rows="2" maxlength="12000" required placeholder="Pregunta sobre tu práctica…"></textarea><button class="button primary" id="send-button" type="submit" aria-label="Enviar mensaje">↑</button><p>Revisa las recomendaciones antes de aplicarlas.</p></form>

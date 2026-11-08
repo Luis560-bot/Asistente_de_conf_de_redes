@@ -279,3 +279,19 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
   correcto, discrepante y con versión pendiente; se mantuvo visible la
   identificación de datos sintéticos. No se guardaron estos escenarios en la
   base de casos durante esta comprobación.
+
+## Identidad del chat: Nexo (8 de noviembre de 2026)
+
+- El usuario pidió sustituir la apariencia genérica del chat por un personaje
+  que salude al abrirlo. Se implementó Nexo, un robot de redes dibujado en SVG
+  propio, con mano que saluda y ojos animados. No depende de recursos externos.
+- El personaje aparece en el acceso flotante, la cabecera y la bienvenida del
+  chat. El saludo contextual se presenta visualmente sin añadir turnos falsos
+  al historial; reabrir no duplica la bienvenida ni borra la conversación.
+- Dos preguntas rápidas rellenan el cuadro para que el usuario pueda editar
+  y enviar. No se envían consultas al proveedor por abrir el chat o pulsarlas.
+- El asistente se identifica como Nexo de NetAssist en sus instrucciones.
+  Se conserva el chat contextual, minimizable y ampliable, abajo a la derecha.
+- Se revisaron en navegador la vista de escritorio y móvil (390 px), el saludo,
+  los accesos rápidos y la reapertura sin duplicados. Las animaciones respetan
+  la preferencia de movimiento reducido. Se comprobó sintaxis JavaScript y SVG.

@@ -1324,7 +1324,67 @@ dialog::backdrop {
 .case-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .case-actions select { max-width: 100%; padding: 10px; }
 
+/* Nexo: personaje vectorial propio, compartido por el acceso y la bienvenida. */
+#chat-launcher {
+  flex-direction: row-reverse;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  box-shadow: none;
+  bottom: 16px;
+  right: 18px;
+}
+.nexo-launcher-art { position: relative; display: block; width: 100px; height: 108px; flex: none; }
+.nexo-launcher-art::before {
+  content: ""; position: absolute; inset: 17px 9px 4px; border-radius: 50%;
+  background: #ddf5eb; border: 1px solid #b8e4d3; box-shadow: 0 6px 24px #133c4920;
+}
+.nexo-launcher-art img { position: relative; width: 100px; height: 100px; transition: transform .2s; }
+#chat-launcher:hover .nexo-launcher-art img { transform: translateY(-4px) rotate(-3deg); }
+#chat-launcher > .nexo-launcher-label {
+  margin: 0; padding: 14px 18px; color: #203e4c; background: #fff;
+  border: 1px solid #d4e5de; border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 5px 24px #163c4917; max-width: 220px;
+}
+.nexo-launcher-label strong { font-size: 13px; font-weight: 700; }
+#chat-launcher small { color: #607f83; max-width: 180px; font-size: 11px; }
+.nexo-header-art { flex: none; width: 54px; height: 54px; background: #244c57; border-radius: 18px; }
+.nexo-header-art img { width: 54px; height: 54px; display: block; }
+.chat-heading { padding: 11px 14px; }
+.chat-heading h2 { font-size: 17px; }
+.nexo-brand { color: #9dbfbe; font-size: 10px; font-weight: 400; }
+.nexo-presence { display: inline-block; width: 6px; height: 6px; background: #51a58c; border-radius: 50%; margin-right: 5px; }
+.messages { background: radial-gradient(#dbe9e3 .7px, transparent .7px) 0 0 / 18px 18px, #fafcfb; }
+.nexo-welcome { text-align: center; padding: 0 10px 18px; color: #21434d; }
+.nexo-welcome-art { height: 132px; width: 176px; position: relative; margin: 0 auto 5px; }
+.nexo-welcome-art img { position: relative; z-index: 1; width: 138px; height: 138px; }
+.nexo-orbit { position: absolute; inset: 12px 30px 0; border-radius: 50%; background: #e3f5ed; border: 1px dashed #a9d7c9; transform: rotate(-15deg); }
+.nexo-orbit::after { content: ""; position: absolute; right: 1px; top: 16px; width: 9px; height: 9px; border-radius: 3px; background: #e7be68; box-shadow: -104px 67px 0 -2px #67b8a3; }
+.nexo-hello { position: absolute; right: -10px; top: 16px; z-index: 2; background: #fff; border: 1px solid #d1e8dd; border-radius: 11px 11px 11px 2px; padding: 6px 10px; font-size: 10px; font-weight: 600; transform: rotate(5deg); }
+.nexo-eyebrow { color: #4d8e7e; font-size: 8px; letter-spacing: 1.7px; font-weight: 700; margin: 10px 0 7px; }
+.nexo-welcome h3 { font-size: 25px; letter-spacing: -.7px; margin: 0 0 9px; }
+.nexo-intro { font-size: 12px; line-height: 1.75; color: #607a82; margin: 0 auto 15px; max-width: 350px; }
+.nexo-prompts { display: grid; gap: 7px; max-width: 340px; margin: auto; }
+.nexo-prompts button { display: flex; justify-content: space-between; align-items: center; border: 1px solid #dce9e2; background: #fff; padding: 10px 12px; border-radius: 10px; color: #315a5c; text-align: left; font-size: 11px; }
+.nexo-prompts button:hover { border-color: #79bca8; background: #f0f9f4; }
+.nexo-prompts button span { color: #5b9b89; }
+.nexo-footnote { color: #7d9297; font-size: 9px; line-height: 1.6; margin: 14px 0 0; }
+.nexo-greeting .nexo-welcome-art img { animation: nexo-arrive .8s ease-out; }
+.nexo-greeting .nexo-header-art img { animation: nexo-arrive .8s ease-out; }
+@keyframes nexo-arrive { 0% { transform: translateY(8px) rotate(-8deg); } 45% { transform: translateY(-5px) rotate(6deg); } 75% { transform: translateY(1px) rotate(-3deg); } 100% { transform: translateY(0) rotate(0); } }
+@media (max-width: 600px) {
+  #chat-launcher { right: 10px; bottom: 10px; }
+  #chat-launcher > .nexo-launcher-label { max-width: 195px; padding: 12px 14px; }
+  #chat-launcher small { max-width: 160px; }
+  .nexo-welcome-art { height: 112px; }
+  .nexo-welcome-art img { width: 120px; height: 120px; }
+}
+
 @media(prefers-reduced-motion:reduce) {
+  .nexo-greeting img { animation: none !important; }
+  #chat-launcher:hover .nexo-launcher-art img { transform: none; }
   * {
     scroll-behavior:auto!important;
   }

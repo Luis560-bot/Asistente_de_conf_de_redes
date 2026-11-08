@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" fill="none">
+  <style>
+    .hand { transform-origin: 139px 108px; animation: wave 4s ease-in-out infinite; }
+    .eyes { animation: blink 5.5s infinite; transform-origin: 90px 74px; }
+    @keyframes wave { 0%,12%,40%,100% {transform:rotate(0deg)} 20%,32% {transform:rotate(-18deg)} 26%,38% {transform:rotate(12deg)} }
+    @keyframes blink { 0%,43%,47%,100% {transform:scaleY(1)} 45% {transform:scaleY(.12)} }
+    @media (prefers-reduced-motion:reduce) { .hand,.eyes {animation:none} }
+  </style>
+  <ellipse cx="88" cy="162" rx="43" ry="7" fill="#143D49" opacity=".12"/>
+  <path d="M69 137v13q0 7-11 7h-9v-8l12-5v-7M105 137v13q0 7 11 7h9v-8l-12-5v-7" fill="#234D5D"/>
+  <path d="M48 106q-18 4-18 24" stroke="#42B9A4" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="30" cy="134" r="8" fill="#9CE6CF" stroke="#234D5D" stroke-width="3"/>
+  <g class="hand">
+    <path d="M126 119q16-2 19-26" stroke="#42B9A4" stroke-width="12" stroke-linecap="round"/>
+    <path d="m141 91-4-12q-1-5 3-5l6 9 1-19q1-5 5-3l2 19 5-13q3-4 6 0l-3 19 5-7q5-3 6 2l-10 17q-7 10-18 1Z" fill="#B1F0D7" stroke="#234D5D" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <rect x="52" y="101" width="72" height="43" rx="17" fill="#52C8AF" stroke="#234D5D" stroke-width="3"/>
+  <rect x="65" y="113" width="47" height="19" rx="6" fill="#214B59"/>
+  <path d="M73 118h15m-15 5h9" stroke="#A6E8D6" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="102" cy="122" r="3" fill="#F9D78B"/>
+  <path d="M88 41V28" stroke="#234D5D" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="88" cy="23" r="7" fill="#F9D78B" stroke="#234D5D" stroke-width="3"/>
+  <rect x="30" y="63" width="12" height="27" rx="6" fill="#52C8AF" stroke="#234D5D" stroke-width="3"/>
+  <rect x="134" y="63" width="12" height="27" rx="6" fill="#52C8AF" stroke="#234D5D" stroke-width="3"/>
+  <rect x="39" y="41" width="98" height="68" rx="26" fill="#DDF8EC" stroke="#234D5D" stroke-width="3"/>
+  <path d="M54 51q13-5 26-4" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <rect x="49" y="55" width="78" height="43" rx="17" fill="#173C4D"/>
+  <g class="eyes" fill="#A9F5D9"><rect x="63" y="68" width="11" height="15" rx="5.5"/><rect x="102" y="68" width="11" height="15" rx="5.5"/></g>
+  <path d="M82 83q6 6 12 0" stroke="#A9F5D9" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="58" cy="85" rx="5" ry="2.5" fill="#F1BAA2" opacity=".8"/><ellipse cx="119" cy="85" rx="5" ry="2.5" fill="#F1BAA2" opacity=".8"/>
+</svg>

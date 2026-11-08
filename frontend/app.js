@@ -84,7 +84,7 @@ function appendMessage(role, content, persist = true) {
   else { const p = document.createElement("p"); p.textContent = content; bubble.append(p); }
   const meta = document.createElement("span");
   meta.className = "message-meta";
-  meta.textContent = role === "assistant" ? "NetAssist" : "Tú";
+  meta.textContent = role === "assistant" ? "Nexo · NetAssist" : "Tú";
   article.append(bubble, meta);
   messagesElement.append(article);
   messagesElement.scrollTop = messagesElement.scrollHeight;
@@ -92,16 +92,24 @@ function appendMessage(role, content, persist = true) {
 }
 function welcome() {
   messagesElement.replaceChildren();
-  appendMessage("assistant", activeCase
-    ? "Ya conozco los requisitos de esta práctica. Puedes preguntarme sobre las VLAN, completar datos o consultar una salida. Las recomendaciones necesitan revisión en tu equipo."
-    : "Hola, soy NetAssist. Abre una práctica desde el formulario y te acompañaré con el contexto de tu equipo y tus VLAN.", false);
+  const welcomeCard = document.createElement("article");
+  welcomeCard.className = "nexo-welcome";
+  welcomeCard.innerHTML = `<div class="nexo-welcome-art"><span class="nexo-orbit" aria-hidden="true"></span><img src="nexo.svg" alt="Nexo, un pequeño robot de redes que saluda" width="138" height="138"><span class="nexo-hello">¡Hola, colega!</span></div><p class="nexo-eyebrow">TU COMPAÑERO DE REDES</p><h3>¡Soy Nexo!</h3><p class="nexo-intro"></p><div class="nexo-prompts"><button type="button" data-nexo-prompt="¿Por dónde empiezo con esta práctica?">¿Por dónde empiezo? <span aria-hidden="true">↗</span></button><button type="button" data-nexo-prompt="Explícame por qué se usa modo access en los puertos de esta práctica.">Entender modo access <span aria-hidden="true">↗</span></button></div><p class="nexo-footnote">Tú haces la práctica. Yo te ayudo a entender cada paso.</p>`;
+  welcomeCard.querySelector(".nexo-intro").textContent = activeCase
+    ? `Ya tengo el contexto de «${activeCase.title}». Vamos paso a paso: podemos revisar tus VLAN, entender un comando o conversar sobre una salida.`
+    : "Estoy aquí para ayudarte a entender tu red, un cable a la vez. Abre una práctica o cuéntame qué te gustaría aprender.";
+  messagesElement.append(welcomeCard);
 }
+
 function openChat() {
   chatPanel.hidden = false;
   $("chat-launcher").hidden = true;
   $("chat-launcher").setAttribute("aria-expanded", "true");
+  chatPanel.classList.remove("nexo-greeting");
+  requestAnimationFrame(() => { if (!chatPanel.hidden) chatPanel.classList.add("nexo-greeting"); });
   inputElement.focus();
-  messagesElement.scrollTop = messagesElement.scrollHeight;
+  if (history.length) messagesElement.scrollTop = messagesElement.scrollHeight;
+  else messagesElement.scrollTop = 0;
 }
 function closeChat() {
   chatPanel.hidden = true;
@@ -399,7 +407,7 @@ $("new-case").addEventListener("click", () => {
   $("case-form").reset(); $("case-content").hidden = true; $("empty-case").hidden = false;
   $("case-heading").textContent = "Un espacio para construir"; $("case-status").textContent = "Sin práctica abierta";
   $("open-case-button").textContent = "Abrir práctica ↗";
-  $("chat-context").textContent = "Sin práctica abierta"; $("launcher-context").textContent = "Listo para acompañarte";
+  $("chat-context").textContent = "Sin práctica abierta"; $("launcher-context").textContent = "¿Vemos tu red juntos?";
   for (const id of ["proposal-checks", "diagnosis-output", "evidence-records"]) $(id).replaceChildren();
   for (const id of ["review-command", "evidence-input"]) { $(id).value = ""; $(id).disabled = true; }
   $("save-evidence-button").disabled = true; $("evidence-status").textContent = "No hay evidencia aportada.";
@@ -450,3 +458,10 @@ $("load-demo").addEventListener("click", () => {
   $("demo-status").textContent = `Datos sintéticos: ${scenario.description} Continúa con Generar configuración y Analizar evidencia.`;
 });
 loadDemoScenarios();
+
+messagesElement.addEventListener("click", event => {
+  const button = event.target.closest("[data-nexo-prompt]");
+  if (!button || busy) return;
+  inputElement.value = button.dataset.nexoPrompt;
+  inputElement.focus();
+});
