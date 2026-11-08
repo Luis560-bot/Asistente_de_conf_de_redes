@@ -6,6 +6,18 @@ from backend import main
 
 
 class ContextualChat(unittest.TestCase):
+    def test_generator_works_without_rag_or_provider(self):
+        service = MagicMock()
+        service.initialize.side_effect = OSError("sin índice")
+        with patch.object(main, "rag_service", service), patch.object(main, "llamar_llm", AsyncMock()) as model:
+            with TestClient(main.app) as client:
+                response = client.post("/generar", json=self.context())
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["status"], "proposed")
+                self.assertFalse(response.json()["lab_verified"])
+                model.assert_not_awaited()
+                service.buscar.assert_not_called()
+
     def context(self):
         return {"title": "Separar grupos", "model": "2960", "version": "15.0",
                 "groups": [{"name": "Administración", "vlan": "10", "ports": "Fa0/1"},

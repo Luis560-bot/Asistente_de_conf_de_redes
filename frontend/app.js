@@ -176,6 +176,7 @@ $("case-form").addEventListener("submit", (event) => {
   $("form-error").textContent = "";
   // Una edición inicia una revisión del caso y descarta evidencia e historial antiguos.
   activeCase = nextCase; history = [];
+  $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = "";
   $("review-command").value = ""; $("evidence-input").value = "";
   $("evidence-status").textContent = "No hay evidencia aportada.";
   renderCase(); welcome(); activateTab(tabs[0]);
@@ -199,7 +200,7 @@ for (const id of ["review-command", "evidence-input"]) $(id).addEventListener("i
 });
 function setBusy(value) {
   busy = value;
-  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button"]) $(id).disabled = value;
+  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "generate-button"]) $(id).disabled = value;
   if (activeCase) $("save-evidence-button").disabled = value;
   $("typing-indicator").hidden = !value;
 }
@@ -256,3 +257,30 @@ $("contact-button").addEventListener("click", () => { $("contact-details").textC
 for (const id of ["close-contact-button", "dialog-ok-button"]) $(id).addEventListener("click", () => $("contact-dialog").close());
 $("service-status").addEventListener("click", loadService);
 welcome(); loadService();
+
+$("generate-button").addEventListener("click", async () => {
+  if (!activeCase || busy) return;
+  setBusy(true);
+  $("generation-status").textContent = "Comprobando requisitos…";
+  try {
+    const response = await fetch(`${API_BASE}/generar`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(activeCase), signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error();
+    const proposal = await response.json();
+    const safe = escapeHtml;
+    $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren();
+    if (proposal.status !== "proposed") {
+      $("case-status").textContent = proposal.errors.length ? "Requisitos por corregir" : "Datos incompletos";
+      $("generation-status").textContent = [...proposal.missing.map(x => `Falta: ${x}.`), ...proposal.errors].join(" ");
+      return;
+    }
+    $("case-status").textContent = "Propuesta generada";
+    $("generation-status").textContent = "Comprobaciones de código superadas. Prueba en laboratorio pendiente.";
+    $("proposal-output").innerHTML = `<h3>Configuración de referencia · un switch</h3><p>${safe(proposal.explanation)}</p>${renderMarkdown("```ios\n" + proposal.commands + "\n```")}<h3>Reglas comprobadas por código</h3><ul>${proposal.validations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><h3>Antes de aplicar</h3><ul>${proposal.limitations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><p>Después de revisar los resultados, guarda manualmente con <code>${safe(proposal.save_command)}</code>.</p><p>Fuente de la plantilla: <a href="${safe(proposal.sources[0].url)}" target="_blank" rel="noopener noreferrer">${safe(proposal.sources[0].title)}</a>. Comprueba su correspondencia con tu equipo.</p>`;
+    $("proposal-checks").innerHTML = `<h3>Plan de comprobación · pendiente de ejecutar</h3><ul>${proposal.checks.map(x => `<li><code>${safe(x.command)}</code><p>${safe(x.expected)}</p></li>`).join("")}</ul><p>En los PC configura direcciones de una misma subred para cada grupo y subredes distintas entre grupos. Registra IP, máscara, origen, destino y resultado de ping: dentro de cada VLAN debe responder; entre VLAN no habrá comunicación sin enrutamiento. Un ping fallido por sí solo no demuestra aislamiento por VLAN.</p>`;
+  } catch {
+    $("generation-status").textContent = "No se pudo generar la propuesta. Revisa la conexión y vuelve a intentarlo.";
+  } finally { setBusy(false); }
+});

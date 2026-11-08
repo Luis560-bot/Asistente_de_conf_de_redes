@@ -100,6 +100,30 @@ El usuario exige que las conexiones y migraciones del programa no interfieran co
 
 Registrar cambios de alcance, nuevas decisiones y evidencia real de finalización cuando se acuerden o se obtengan. Mantener separados lo implementado, lo representado por el mockup y lo pendiente. No guardar claves, contraseñas ni otros secretos en esta documentación.
 
+## Avance de fase 3: generador implementado (8 de noviembre de 2026)
+
+- Se implementó `POST /generar` y el botón de generación en la interfaz real.
+  Produce comandos de referencia para un switch Cisco IOS, dos VLAN y puertos
+  de acceso, explicación, reglas comprobadas, fuentes y plan de comprobación.
+- Las reglas y la plantilla son deterministas, independientes de RAG y de los
+  proveedores. El chat recibe la misma propuesta calculada desde los requisitos
+  y puede explicarla con IA. No se implementó generación libre de comandos por IA.
+- Solicita datos faltantes y bloquea VLAN iguales o fuera de 2–1001, puertos
+  duplicados o compartidos (incluidos alias), rangos y sintaxis no admitida.
+  No se valida automáticamente la compatibilidad del modelo/IOS, la existencia
+  física de interfaces ni la configuración previa. Esas revisiones son manuales.
+- Se verificó en navegador que la versión faltante bloquea la generación y que,
+  al completarla, aparecen comandos para VLAN 10 y 20 con cuatro puertos, reglas
+  comprobadas y el estado explícito de laboratorio pendiente. El servicio del
+  proyecto se reinició en 8000; frontend continúa en 5501.
+- Se añadieron pruebas del generador y de su API sin RAG ni proveedor. Las
+  pruebas unitarias usan una dependencia de embeddings simulada; no equivalen
+  a pruebas de red. El servicio reiniciado sí cargó el índice real del proyecto.
+- La práctica reproducible de aceptación está en `docs/FASE_3.md`.
+  No se ejecutó en Packet Tracer ni se obtuvo evidencia real de conectividad.
+  Por ello la fase 3 sigue abierta hasta completar esa aceptación. El análisis
+  automático de salidas y la persistencia de casos siguen pendientes en fases 4 y 5.
+
 ## Comprobación posterior de proveedores
 
 Se configuró localmente la credencial de Gemini aportada por el usuario, sin

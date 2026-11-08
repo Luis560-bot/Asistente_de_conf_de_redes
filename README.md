@@ -101,6 +101,7 @@ netassist/
 
 - `POST /chat`: recibe `{ "messages": [{ "role": "user|assistant", "content": "..." }] }`, recupera hasta cuatro fragmentos relevantes y devuelve `{ "reply": "...", "contact": "..." }`.
 - `POST /reindexar`: reconstruye el índice desde los documentos actuales de `docs/`.
+- `POST /generar`: recibe los requisitos del caso, indica datos faltantes o errores y genera una propuesta Cisco VLAN/acceso independiente del proveedor. Ver [fase 3](docs/FASE_3.md).
 - `GET /health`: informa el estado de la API y del índice RAG.
 - `GET /contacto`: devuelve el contacto de derivación configurado.
 
@@ -154,8 +155,7 @@ versión de IOS, VLAN y puertos después; el panel mostrará lo que falta. Pulsa
 **Abrir práctica** para trabajar sin escribir primero al chat. **Completar con un
 ejemplo** precarga un escenario ilustrativo que debes revisar.
 
-- **Configuración:** resumen de requisitos y datos pendientes. El generador
-  estructurado corresponde a la fase 3.
+- **Configuración:** resumen de requisitos y datos pendientes. Pulsa **Generar configuración** para obtener comandos, explicaciones, reglas comprobadas y límites. El modelo y la versión son obligatorios; su compatibilidad requiere revisión manual.
 - **Comprobaciones:** comando en revisión y salida pegada manualmente. Pulsa
   **Incorporar al caso** para que el chat reciba esa evidencia. No se verifica
   automáticamente ni se considera prueba de conectividad.
