@@ -2,6 +2,8 @@
 
 Prototipo educativo de asistente de soporte para MikroTik RouterOS y Cisco IOS. Usa FastAPI, recuperación local de manuales (RAG), Gemini con failover a Groq y una interfaz web en HTML, CSS y JavaScript sin frameworks.
 
+La evolución acordada es una aplicación web de laboratorio con formularios y chat contextual, comenzando por Cisco, VLAN y puertos de acceso. El objetivo, las seis fases, las prioridades y las restricciones de aislamiento de bases de datos se conservan en la [memoria del proyecto](docs/MEMORIA_PROYECTO.md). El [mockup HTML](frontend/mockup.html) representa la propuesta de interfaz.
+
 ## Estructura
 
 ```text
@@ -124,3 +126,23 @@ El backend acepta `.txt` y `.pdf`, divide el texto en fragmentos de 500 palabras
 - Los manuales de ejemplo son referencias introductorias, no sustituyen la documentación oficial ni una validación en laboratorio.
 - La búsqueda semántica y su umbral deben validarse con el corpus de la institución.
 - No ejecutes comandos de cambio sin verificar modelo, versión, topología, permisos y respaldo.
+
+## Base de la fase 1
+
+El alcance, las fuentes y las limitaciones están en [docs/FASE_1.md](docs/FASE_1.md).
+El corpus incluye una síntesis de VLAN/puertos de acceso basada en documentación oficial Cisco.
+La caché del modelo queda por defecto en `.cache/huggingface` del proyecto.
+
+La reindexación conserva el índice activo si falla y publica una generación nueva
+solo al terminar. El manifiesto en `backend/chroma_db` permite recuperar la última
+publicación después de reiniciar. Usa un único proceso de API por almacenamiento;
+las generaciones previas se retienen sin limpieza automática.
+
+Pruebas de respaldo, reindexación y degradación de API (sin llamadas a proveedores):
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Estas comprobaciones no demuestran funcionamiento en Packet Tracer. La práctica
+y su evidencia corresponden a la fase 3.

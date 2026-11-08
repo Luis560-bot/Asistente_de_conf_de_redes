@@ -9,6 +9,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DOCS_DIR = ROOT_DIR / "docs"
 CHROMA_DIR = ROOT_DIR / "backend" / "chroma_db"
 
+os.environ.setdefault("HF_HOME", str(ROOT_DIR / ".cache" / "huggingface"))
+
 # Se carga únicamente el archivo .env del proyecto; las claves no se exponen al cliente.
 load_dotenv(ROOT_DIR / ".env")
 

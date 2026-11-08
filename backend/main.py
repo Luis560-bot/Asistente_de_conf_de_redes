@@ -6,6 +6,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from .config import FRONTEND_ORIGIN, SUPPORT_CONTACT
@@ -22,10 +23,10 @@ async def lifespan(app: FastAPI):
     """Inicializa el índice al arrancar; deja la API disponible si RAG falla."""
     app.state.rag_error = None
     try:
-        app.state.rag_summary = rag_service.initialize()
+        app.state.rag_summary = await run_in_threadpool(rag_service.initialize)
     except Exception as error:
-        app.state.rag_error = str(error)
-        app.state.rag_summary = {"archivos": 0, "fragmentos": 0}
+        app.state.rag_error = None if rag_service.coleccion is not None else type(error).__name__
+        app.state.rag_summary = getattr(rag_service, "resumen", {"archivos": 0, "fragmentos": 0})
         logger.exception("No se pudo iniciar RAG; el chat responderá con derivación.")
     yield
 
@@ -80,12 +81,12 @@ async def contacto() -> dict[str, str]:
 async def reindexar(request: Request) -> dict[str, int]:
     """Vuelve a leer e indexar los documentos de /docs."""
     try:
-        resumen = rag_service.initialize()
+        resumen = await run_in_threadpool(rag_service.initialize)
         request.app.state.rag_error = None
         request.app.state.rag_summary = resumen
         return resumen
     except Exception as error:
-        request.app.state.rag_error = str(error)
+        request.app.state.rag_error = None if rag_service.coleccion is not None else type(error).__name__
         logger.exception("Falló la reindexación de documentos.")
         raise HTTPException(
             status_code=503,
@@ -106,7 +107,7 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
         consulta = next(
             mensaje.content for mensaje in reversed(solicitud.messages) if mensaje.role == "user"
         )
-        fragmentos = rag_service.buscar(consulta)
+        fragmentos = await run_in_threadpool(rag_service.buscar, consulta)
         contexto = formatear_contexto(fragmentos)
         respuesta = await llamar_llm(mensajes, contexto)
         return RespuestaChat(reply=respuesta, contact=SUPPORT_CONTACT)

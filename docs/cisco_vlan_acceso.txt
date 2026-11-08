@@ -1,0 +1,25 @@
+Cisco IOS — VLAN y puertos de acceso
+Síntesis educativa, no validada aún en Packet Tracer.
+Referencia: Cisco Catalyst 2960 y 2960-S, IOS 15.2(1)E, Configuring VLANs.
+https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960/software/release/15-2_1_e/configuration/guide/2960_scg/swvlan.html
+Consultar modelo e IOS reales antes de adaptar los ejemplos.
+
+Una VLAN separa dominios de difusión de capa 2. Un puerto de acceso está asociado
+a una VLAN de datos. Crear la VLAN no basta para asignarle los puertos.
+Ejemplo ilustrativo desde EXEC privilegiado, adaptando interfaces disponibles:
+configure terminal
+vlan 10
+ name ADMINISTRACION
+exit
+interface FastEthernet0/1
+ switchport mode access
+ switchport access vlan 10
+exit
+end
+
+Contrastar con show vlan brief y show interfaces FastEthernet0/1 switchport.
+Revisar la existencia de la VLAN, el modo de acceso y la VLAN asociada al puerto.
+La configuración persistente requiere copy running-config startup-config después
+de revisar los cambios. Las funciones disponibles dependen del modelo y la versión.
+La guía corresponde a equipos reales; no garantiza compatibilidad completa con
+la simulación. Una salida de configuración no prueba conectividad entre equipos.

@@ -23,14 +23,6 @@ MENSAJE_FALLBACK = (
 )
 
 
-def _validar_configuracion() -> None:
-    """Comprueba que cada proveedor configurado tenga también su modelo."""
-    if GEMINI_API_KEY and not GEMINI_MODEL:
-        raise RuntimeError("GEMINI_MODEL debe configurarse si se define GEMINI_API_KEY.")
-    if GROQ_API_KEY and not GROQ_MODEL:
-        raise RuntimeError("GROQ_MODEL debe configurarse si se define GROQ_API_KEY.")
-
-
 async def _llamar_gemini(mensajes: list[dict[str, str]], system_prompt: str) -> str:
     """Convierte los roles a contents/model y envía systemInstruction separado."""
     if not GEMINI_API_KEY:
@@ -52,8 +44,7 @@ async def _llamar_gemini(mensajes: list[dict[str, str]], system_prompt: str) -> 
     async with httpx.AsyncClient(timeout=LLM_TIMEOUT_SECONDS) as cliente:
         respuesta = await cliente.post(
             url,
-            params={"key": GEMINI_API_KEY},
-            headers={"content-type": "application/json"},
+            headers={"content-type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
             json={
                 "systemInstruction": {"parts": [{"text": system_prompt}]},
                 "contents": contenido,
@@ -71,7 +62,7 @@ async def _llamar_gemini(mensajes: list[dict[str, str]], system_prompt: str) -> 
     texto = "\n".join(
         parte["text"]
         for parte in partes
-        if isinstance(parte.get("text"), str)
+        if isinstance(parte, dict) and isinstance(parte.get("text"), str)
     ).strip()
     if not texto:
         raise ValueError("Gemini devolvió una respuesta sin texto.")
@@ -115,12 +106,11 @@ async def _llamar_groq(mensajes: list[dict[str, str]], system_prompt: str) -> st
 
 async def llamar_llm(mensajes: list[dict[str, str]], contexto_rag: str) -> str:
     """Prueba Gemini primero, pasa a Groq ante un error y siempre devuelve texto."""
-    _validar_configuracion()
     system_prompt = construir_prompt(contexto_rag, SUPPORT_CONTACT)
 
     try:
         return await _llamar_gemini(mensajes, system_prompt)
-    except (httpx.HTTPError, ValueError, RuntimeError) as error:
+    except (httpx.HTTPError, ValueError, RuntimeError, TypeError, KeyError, AttributeError) as error:
         logger.warning(
             "Gemini no pudo responder; se intentará Groq. Tipo de error: %s",
             type(error).__name__,
@@ -128,7 +118,7 @@ async def llamar_llm(mensajes: list[dict[str, str]], contexto_rag: str) -> str:
 
     try:
         return await _llamar_groq(mensajes, system_prompt)
-    except (httpx.HTTPError, ValueError, RuntimeError) as error:
+    except (httpx.HTTPError, ValueError, RuntimeError, TypeError, KeyError, AttributeError) as error:
         logger.error(
             "Gemini y Groq no pudieron responder. Tipo de error: %s",
             type(error).__name__,

@@ -1,0 +1,135 @@
+# Memoria del proyecto NetAssist
+
+Última actualización: 8 de noviembre de 2026.
+
+Este documento conserva las decisiones de producto acordadas con el usuario. Es una referencia para continuar el proyecto; las fases siguientes describen trabajo previsto y no implican que esté implementado.
+
+## Lo que se busca
+
+Convertir NetAssist en una aplicación web para preparar, explicar y contrastar prácticas de configuración de redes. El usuario debe poder iniciar una tarea desde formularios, sin tener que escribir primero al chat.
+
+La primera versión se concentra en un flujo completo de Cisco: separar Administración y Laboratorio mediante VLAN y puertos de acceso. Es preferible demostrar ese escenario con profundidad y evidencia de laboratorio antes de ampliar simultáneamente a OSPF, NAT y ambas marcas.
+
+El prototipo actual incluye soporte conversacional para Cisco IOS y MikroTik RouterOS. Eso no significa que todos esos escenarios formen parte del primer generador estructurado.
+
+## Valor de la IA y responsabilidad del código
+
+La IA generativa transforma requisitos en una propuesta técnica, solicita datos faltantes, explica recomendaciones e interpreta evidencia. Debe responder en función del equipo, la versión, los requisitos y la documentación pertinentes al caso.
+
+Las comprobaciones exactas corresponden a código convencional: por ejemplo, campos obligatorios, identificadores de VLAN distintos, asignaciones de puertos sin conflictos y comparación de datos extraídos de una salida con los requisitos. Los validadores deben tener un alcance explícito; superar una comprobación no demuestra por sí solo el funcionamiento completo de la red.
+
+La aplicación debe distinguir entre:
+
+- Datos incompletos: todavía falta información para preparar una propuesta pertinente.
+- Propuesta generada: hay comandos de referencia y una explicación; todavía no se ha demostrado su funcionamiento.
+- Comprobaciones automáticas realizadas: determinadas reglas exactas fueron evaluadas por código.
+- Evidencia contrastada: una salida aportada permite sostener un hallazgo concreto.
+- Pruebas de laboratorio realizadas: se documentan el escenario, la prueba y el resultado observado. No se debe dar este estado por supuesto a partir de los anteriores.
+
+## Flujo de la primera versión
+
+1. El usuario abre una práctica desde un formulario y describe la separación entre Administración y Laboratorio.
+2. La aplicación solicita los datos que falten: equipo, modelo, versión, VLAN, puertos y conexiones relevantes.
+3. Se produce una propuesta estructurada con requisitos, comandos por equipo, explicaciones, fuentes y pasos de comprobación.
+4. El usuario revisa y aplica los comandos en el laboratorio externo.
+5. El usuario ejecuta las comprobaciones y pega las salidas como evidencia en el caso.
+6. La aplicación contrasta la evidencia con los requisitos y, al incorporar la fase de diagnóstico, propone el siguiente paso concreto sin repetir los ya realizados.
+
+## Interfaz y chat contextual
+
+- Pantalla de laboratorio con formularios, panel de resultados y una estética de redes.
+- Resultados organizados en configuración, comprobaciones y fuentes.
+- Chat flotante abajo a la derecha, minimizable y ampliable.
+- El chat conoce el caso abierto: requisitos, equipo, versión, propuesta, comando que se está revisando, evidencia aportada y pasos realizados cuando estén disponibles.
+- Debe permitir preguntas como «¿por qué este comando?» sobre la configuración que el usuario está revisando.
+- El formulario permite iniciar y avanzar la tarea; el chat sirve de acompañamiento contextual.
+
+## Relación con Cisco Packet Tracer
+
+Nuestra aplicación se ejecuta en el navegador y Packet Tracer se utiliza como laboratorio externo. El chat pertenece a nuestra web.
+
+Para la primera versión, el intercambio es manual: se copian los comandos desde la web a la CLI del equipo simulado y se pegan las salidas de vuelta en el caso. No se ha acordado una integración automática que controle Packet Tracer, lea archivos `.pkt` o observe su estado.
+
+Las funciones y los comandos deben comprobarse en el modelo y la versión disponibles en la simulación. La aplicación solo puede conocer la evidencia que reciba; no debe afirmar que ha ejecutado o verificado comandos por generar una propuesta.
+
+## Fases acordadas
+
+| Fase | Trabajo principal | Cómo se comprueba que está terminada |
+| --- | --- | --- |
+| 1. Fortalecer la base | Delimitar el escenario, ampliar documentación y corregir el respaldo de proveedores y la reindexación. | Recupera fuentes pertinentes y conserva el servicio ante los fallos previstos. |
+| 2. Crear la interfaz de laboratorio | Formularios, panel de resultados, estética de redes y chat flotante contextual. | Se puede iniciar una tarea sin escribir al chat. |
+| 3. Implementar el generador | Primer escenario Cisco: VLAN y puertos de acceso, resultados estructurados y validadores. | Solicita los datos faltantes y una configuración de referencia funciona en laboratorio, con evidencia registrada. |
+| 4. Implementar diagnóstico | Analizar salidas del mismo escenario y conservar los pasos realizados. | Cada hallazgo muestra su evidencia y propone una prueba concreta. |
+| 5. Guardar casos e informes | SQLite para casos, recuperación de prácticas y exportación. | Se puede reabrir un caso con sus requisitos, resultados y evidencia. |
+| 6. Preparar la demostración | Casos correctos, errores, datos incompletos y fallos de proveedor. | Se muestran resultados medidos y límites reales. |
+
+Prioridad acordada: fases 1 a 3 como primera versión; fase 4 como siguiente incremento. El objetivo de la demostración inicial es un flujo de VLAN completo, explicado y contrastado en laboratorio.
+
+## Estado conocido y referencias
+
+- Existe un prototipo con frontend HTML/CSS/JavaScript, backend FastAPI, RAG local en ChromaDB y Gemini con respaldo a Groq. El historial conversacional del prototipo se conserva en el navegador.
+- Se preparó un entorno local Python 3.11 y se comprobó la indexación y recuperación de los dos manuales incluidos. Esto no equivale a completar la fase 1 ni a demostrar una configuración de red en laboratorio.
+- Se creó una referencia visual interactiva en [frontend/mockup.html](../frontend/mockup.html). Incluye formulario de VLAN, pestañas de configuración/comprobaciones/fuentes y chat ampliable.
+- El mockup utiliza datos y respuestas de ejemplo. Sus interacciones sirven para revisar la propuesta de interfaz; no constituyen la implementación del generador o del diagnóstico.
+- El usuario pidió el mockup como archivo HTML. Fue entregado en el repositorio y se dejó una copia local en Descargas.
+- No se ha confirmado todavía una aprobación final del diseño ni una prueba de la configuración en Packet Tracer.
+- La rama de trabajo creada a petición del usuario se llama exactamente `elliot`, desde `main`. Se eliminó la rama remota `codex/preparar-entorno-local` a petición del usuario.
+
+## Restricción persistente de bases de datos
+
+El usuario exige que las conexiones y migraciones del programa no interfieran con ninguna otra base de datos existente.
+
+- La persistencia vectorial actual está en `backend/chroma_db`, dentro del repositorio, y utiliza la colección `manuales_netassist`.
+- Antes de inicializar, migrar, reindexar o borrar datos, verificar el destino efectivo y que sea exclusivo de NetAssist. No asumir que un nombre o una variable de entorno garantiza aislamiento.
+- La base SQLite de casos prevista para la fase 5 debe tener su propio archivo dentro del almacenamiento del proyecto, separado del almacenamiento interno de ChromaDB. Su implementación sigue pendiente.
+- No reutilizar bases ajenas ni detener o reconfigurar sus servicios para ejecutar NetAssist.
+- Durante la preparación local se detectó el puerto 5500 ocupado por un proceso `tnslsnr` de Oracle; se eligió el puerto 5501 para el frontend y se mantuvo ese servicio existente.
+
+## Avance real de la fase 1 (8 de noviembre de 2026)
+
+- Se delimitó el caso de referencia en `docs/FASE_1.md`: un switch Cisco y dos grupos con VLAN y puertos de acceso. Los valores y direcciones son ejemplos propuestos para la futura práctica, no requisitos confirmados del usuario.
+- Se añadió `docs/cisco_vlan_acceso.txt`, síntesis con referencia oficial de Cisco, recuperable por el buscador. En dos consultas reales sobre asignación y comprobación de VLAN fue el primer resultado (distancias coseno aproximadas 0,370 y 0,382). Corpus: tres archivos, tres fragmentos.
+- Se corrigió el respaldo de proveedores: una configuración incompleta del primario ya no impide intentar el secundario. Se cubrieron timeout, respuesta inválida y fallo de ambos con simulaciones; no se hicieron llamadas de validación a Gemini/Groq reales.
+- La reindexación construye una colección nueva, verifica su tamaño y publica un manifiesto atómico. Conserva la activa ante fallos de lectura o escritura, permite recuperar la generación publicada tras un reinicio y no bloquea el bucle de solicitudes de la API.
+- Se verifica la ruta efectiva antes de abrir ChromaDB; se rechazan enlaces/redirecciones fuera del directorio exclusivo. La caché del modelo usa por defecto `.cache/huggingface` del proyecto.
+- Nueve pruebas automatizadas pasaron: respaldo, fallos de reindexación, rechazo de almacenamiento externo y disponibilidad/degradación de la API. No equivalen a una evaluación exhaustiva de relevancia ni a pruebas de redes.
+- Límites de operación: un solo proceso de API por almacenamiento; se retienen generaciones anteriores sin limpieza automática. La migración inicial desde el índice heredado requiere una reconstrucción correcta para publicar el primer manifiesto.
+- La base de la fase 1 está implementada y comprobada para los casos descritos. Sigue pendiente validar la configuración en Packet Tracer en la fase 3. El generador, la interfaz de laboratorio y el diagnóstico no se implementaron en esta fase.
+
+## Cómo mantener esta memoria
+
+Registrar cambios de alcance, nuevas decisiones y evidencia real de finalización cuando se acuerden o se obtengan. Mantener separados lo implementado, lo representado por el mockup y lo pendiente. No guardar claves, contraseñas ni otros secretos en esta documentación.
+
+## Comprobación posterior de proveedores
+
+Se configuró localmente la credencial de Gemini aportada por el usuario, sin
+incluirla en el repositorio. La llamada real a gemini-2.5-flash devolvió HTTP 404:
+el servicio indicó que no estaba disponible para usuarios nuevos y sugirió
+gemini-3.8-flash. Se dejó este último modelo configurado; dos intentos reales
+agotaron el tiempo de espera (15 y 45 segundos). No se ha confirmado una respuesta
+correcta ni la validez de la credencial. Groq continúa sin clave configurada.
+Las pruebas simuladas previas no demuestran disponibilidad de estos servicios.
+
+## Nuevas claves y pruebas reales (8 de noviembre de 2026)
+
+El usuario proporcionó nuevas credenciales para ambos proveedores. Se guardaron
+solo en `.env`, excluido de Git. No se registran secretos en esta memoria.
+Ambos endpoints de listado de modelos devolvieron HTTP 200 con las nuevas claves.
+
+- `llama-3.3-70b-versatile` devolvió HTTP 404 en Groq. Se seleccionó un modelo
+  anunciado por esa cuenta: `openai/gpt-oss-20b`, que respondió correctamente
+  en una prueba directa (aproximadamente 0,97 s).
+- `gemini-3.8-flash` volvió a agotar 15 s. Se probó `gemini-3.1-flash-lite`,
+  anunciado por el servicio, y respondió correctamente (aproximadamente 2,05 s).
+- Los dos modelos que respondieron quedaron configurados en `.env`.
+- En el flujo de NetAssist con instrucciones del sistema y contexto Cisco,
+  Gemini produjo una respuesta real sin usar Groq. Al forzar una caída de Gemini,
+  Groq produjo una respuesta real de respaldo (aproximadamente 0,70 s).
+- La repetición mostró variabilidad: hubo respuestas de Gemini y un timeout real
+  de Gemini seguido de respuesta correcta de Groq. Por tanto, se comprobó el
+  respaldo tanto ante fallo simulado del primario como ante timeout real. Esto no
+  garantiza disponibilidad permanente; Gemini presenta tiempos intermitentes.
+- Se volvieron a ejecutar las nueve pruebas automatizadas y pasaron.
+
+No se realizaron pruebas de configuración en Packet Tracer ni una prueba desde
+la interfaz del navegador durante estas comprobaciones de proveedores.
