@@ -254,3 +254,28 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
   local se excluyó antes de publicar la fase 5. `.env` sigue local e ignorado.
 - Los secretos de Actions no configuran por sí solos la aplicación local ni
   ejecutan pruebas: requieren un flujo que los consuma explícitamente.
+
+## Fase 6: preparación de demostración (8 de noviembre de 2026)
+
+- Se añadieron seis escenarios sintéticos cargables en la interfaz: correcto,
+  modo/VLAN incorrectos, versión pendiente, conflicto de puertos, paginación y
+  corrección mediante captura posterior. Abren una práctica nueva y usan los
+  botones reales de generación y contraste, sin respuestas falsas del servicio.
+- `scripts/validate_demo.py --with-tests` comprobó 10 recorridos de API y
+  35 pruebas unitarias. Se midieron tiempos locales y se registraron límites
+  en `docs/RESULTADOS_DEMO.md`. RAG y proveedores están simulados en esa ejecución;
+  SQLite usa un directorio temporal exclusivo bajo `.cache`, sin tocar casos existentes.
+- El guion de presentación y cómo reproducir las mediciones están en
+  `docs/FASE_6.md`. Los estados de proveedor se inyectan solo en el evaluador,
+  sin modificar el comportamiento de producción ni las credenciales.
+- Se realizaron dos llamadas directas reales con texto sintético: Gemini
+  respondió en aproximadamente 2,41 s y Groq en 1,22 s. El detalle puntual está en
+  `docs/PROVEEDORES_DEMO.md`. No evalúan calidad técnica, RAG ni disponibilidad futura.
+- La preparación de demostración de software queda implementada. No se ha
+  ejecutado una práctica real en Packet Tracer: la aceptación de fase 3 y la
+  demostración global de conectividad siguen abiertas hasta aportar esa evidencia.
+
+- Se verificó además en navegador la carga de escenarios y los resultados
+  correcto, discrepante y con versión pendiente; se mantuvo visible la
+  identificación de datos sintéticos. No se guardaron estos escenarios en la
+  base de casos durante esta comprobación.

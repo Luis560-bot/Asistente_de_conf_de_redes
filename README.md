@@ -125,6 +125,22 @@ El backend acepta `.txt` y `.pdf`, divide el texto en fragmentos de 500 palabras
 7. **Failover con API primaria caída:** simula error o timeout de Gemini; la solicitud debe intentar Groq y responder sin revelar claves.
 8. **Todas las APIs caídas / error de servicio:** simula fallos en Gemini y Groq o detén el backend; la interfaz debe mostrar un mensaje amable y una vía de contacto humano, sin quedarse en estado «escribiendo».
 
+## Demostración (fase 6)
+
+La sección **Demostración guiada** carga seis escenarios sintéticos: correcto,
+puerto incorrecto, versión pendiente, conflicto de puertos, salida paginada y
+corrección posterior. Usa los botones habituales para generar y analizar.
+El guion, las mediciones y sus límites están en [docs/FASE_6.md](docs/FASE_6.md).
+
+Validación reproducible sin red ni claves:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/validate_demo.py --with-tests
+```
+
+Los [resultados medidos](docs/RESULTADOS_DEMO.md) distinguen simulaciones y
+validación real, que sigue pendiente en Packet Tracer.
+
 ## Límites del prototipo
 
 - Los manuales de ejemplo son referencias introductorias, no sustituyen la documentación oficial ni una validación en laboratorio.

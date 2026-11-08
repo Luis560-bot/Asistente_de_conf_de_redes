@@ -5,6 +5,7 @@ let activeCase = null;
 let savedCase = null;
 let proposalSnapshot = null;
 let diagnosisSnapshot = null;
+let demoScenarios = [];
 let history = [];
 let supportContact = "Contacta al docente o técnico responsable del laboratorio.";
 let busy = false;
@@ -214,6 +215,7 @@ function setBusy(value) {
   for (const id of ["refresh-cases", "load-case", "new-case"]) $(id).disabled = value;
   $("save-case").disabled = value || !activeCase;
   for (const id of ["export-html", "export-json"]) $(id).disabled = value || !savedCase;
+  $("load-demo").disabled = value || !demoScenarios.length;
   $("typing-indicator").hidden = !value;
 }
 $("chat-form").addEventListener("submit", async (event) => {
@@ -416,3 +418,35 @@ for (const format of ["html", "json"]) $(`export-${format}`).addEventListener("c
   finally { setBusy(false); }
 });
 refreshCases().then(rows => { $("storage-status").textContent = `${rows.length} prácticas guardadas. Guarda explícitamente los cambios que quieras conservar.`; }).catch(error => { $("storage-status").textContent = error.message; });
+
+async function loadDemoScenarios() {
+  try {
+    const response = await fetch("demo-cases.json", {signal: AbortSignal.timeout(5000)});
+    if (!response.ok) throw new Error();
+    const data = await response.json(); demoScenarios = data.scenarios;
+    $("demo-scenario").replaceChildren(...demoScenarios.map(item => new Option(item.label, item.id)));
+    $("demo-scenario").disabled = false; $("load-demo").disabled = busy;
+    $("demo-status").textContent = "Selecciona un escenario y cárgalo. No se guarda automáticamente.";
+  } catch { $("demo-status").textContent = "No se pudieron cargar los escenarios. Recarga para volver a intentarlo."; }
+}
+$("load-demo").addEventListener("click", () => {
+  if (busy) return;
+  const scenario = demoScenarios.find(item => item.id === $("demo-scenario").value);
+  if (!scenario) return;
+  if (activeCase && !confirm("Cargar el ejemplo reemplaza el caso de esta pestaña. Guarda tus cambios antes de continuar. ¿Continuar?")) return;
+  const data = scenario.case;
+  const values = {"case-title":data.title, "device-model":data.model, "ios-version":data.version, "connections":data.connections, "admin-vlan":data.groups[0].vlan, "admin-ports":data.groups[0].ports, "lab-vlan":data.groups[1].vlan, "lab-ports":data.groups[1].ports};
+  for (const [id, value] of Object.entries(values)) $(id).value = value;
+  savedCase = null;
+  $("case-form").requestSubmit();
+  activeCase.evidence_records = structuredClone(data.evidence_records);
+  const last = activeCase.evidence_records.at(-1);
+  activeCase.review_command = last?.command || ""; activeCase.evidence = last?.output || "";
+  $("review-command").value = activeCase.review_command; $("evidence-input").value = activeCase.evidence;
+  renderEvidence();
+  for (const id of ["export-html", "export-json"]) $(id).disabled = true;
+  $("evidence-status").textContent = "Capturas sintéticas cargadas. Pulsa Analizar evidencia para contrastarlas.";
+  $("storage-status").textContent = "Escenario de demostración abierto como práctica nueva, sin guardar.";
+  $("demo-status").textContent = `Datos sintéticos: ${scenario.description} Continúa con Generar configuración y Analizar evidencia.`;
+});
+loadDemoScenarios();
