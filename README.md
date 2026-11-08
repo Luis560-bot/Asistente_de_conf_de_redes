@@ -104,7 +104,7 @@ netassist/
 - `GET /health`: informa el estado de la API y del índice RAG.
 - `GET /contacto`: devuelve el contacto de derivación configurado.
 
-El frontend persiste el historial en `localStorage` y lo envía completo en cada turno. No se guardan conversaciones en el backend. No ingreses contraseñas ni datos sensibles: el historial queda en ese navegador hasta pulsar **Nueva conversación**.
+La interfaz de laboratorio conserva el caso y el chat en memoria de la pestaña. Recargar la página los borra; actualizar la práctica reinicia chat y evidencia. Se envían los últimos 40 mensajes y el contexto del caso en cada consulta. El historial del prototipo guardado en `localStorage` no se reutiliza. No ingreses contraseñas ni datos sensibles.
 
 ## RAG y relevancia
 
@@ -146,3 +146,30 @@ Pruebas de respaldo, reindexación y degradación de API (sin llamadas a proveed
 
 Estas comprobaciones no demuestran funcionamiento en Packet Tracer. La práctica
 y su evidencia corresponden a la fase 3.
+
+## Interfaz de laboratorio (fase 2)
+
+Abre el frontend y completa el nombre de la práctica. Puedes registrar modelo,
+versión de IOS, VLAN y puertos después; el panel mostrará lo que falta. Pulsa
+**Abrir práctica** para trabajar sin escribir primero al chat. **Completar con un
+ejemplo** precarga un escenario ilustrativo que debes revisar.
+
+- **Configuración:** resumen de requisitos y datos pendientes. El generador
+  estructurado corresponde a la fase 3.
+- **Comprobaciones:** comando en revisión y salida pegada manualmente. Pulsa
+  **Incorporar al caso** para que el chat reciba esa evidencia. No se verifica
+  automáticamente ni se considera prueba de conectividad.
+- **Fuentes:** referencias disponibles para este escenario.
+- **Tu asistente:** chat contextual, minimizable y ampliable, conectado a `/chat`.
+
+La práctica se mantiene en la pestaña. Recargar la página borra sus datos;
+actualizarla reinicia chat y evidencia. La persistencia pertenece a la fase 5.
+El indicador de conexión permite volver a comprobar el servicio al pulsarlo.
+
+`POST /chat` admite un objeto `context` opcional con `title`, `vendor` (Cisco IOS),
+`model`, `version`, `connections`, `groups` (dos objetos con `name`, `vlan`, `ports`),
+`review_command` y `evidence`. Sus tamaños están limitados; los mensajes sin
+contexto continúan admitidos.
+
+En este equipo usa el puerto **5501** para el frontend y configura
+`FRONTEND_ORIGIN=http://localhost:5501`; el puerto 5500 pertenece a otro servicio.

@@ -133,3 +133,40 @@ Ambos endpoints de listado de modelos devolvieron HTTP 200 con las nuevas claves
 
 No se realizaron pruebas de configuración en Packet Tracer ni una prueba desde
 la interfaz del navegador durante estas comprobaciones de proveedores.
+
+## Fase 2 implementada: interfaz de laboratorio
+
+- `frontend/index.html`, `style.css` y `app.js` ahora contienen la interfaz de
+  laboratorio real: formulario Cisco, dos grupos VLAN, resumen de requisitos,
+  datos pendientes y paneles de configuración, comprobaciones y fuentes.
+- Se abre una práctica desde el formulario sin enviar mensajes al chat ni
+  requerir conexión al proveedor. El ejemplo precarga datos ilustrativos, no
+  crea resultados de laboratorio. Modelo, versión, VLAN y puertos pueden quedar
+  pendientes; los validadores técnicos del generador siguen en la fase 3.
+- Chat flotante minimizable y ampliable, con contexto del caso abierto. El
+  backend acepta `context` opcional y acotado en `/chat`, añade los datos a la
+  consulta del usuario e incluye el escenario Cisco en la recuperación RAG.
+  La ruta anterior sin contexto sigue siendo compatible.
+- El usuario puede registrar un comando y pegar evidencia manualmente. Solo se
+  incorpora al contexto cuando pulsa «Incorporar al caso». No se analiza ni se
+  marca la red como verificada por esa acción. Las fuentes del panel se presentan
+  como referencias disponibles, no como citas efectivamente recuperadas.
+- Se conserva la práctica y el chat en memoria de la pestaña; recargar los borra.
+  Actualizar la práctica reinicia chat y evidencia para evitar arrastrar datos
+  de otro escenario; esta consecuencia se indica junto al formulario. La
+  persistencia de casos de la fase 5 sigue pendiente. El historial anterior de
+  `localStorage` no se reutiliza en un caso nuevo.
+- Se comprobaron en navegador: apertura de práctica sin chat, datos incompletos,
+  pestañas y navegación con flechas, incorporación manual de evidencia de prueba,
+  chat ampliado/minimizado y vista móvil (390 px) sin desbordamiento horizontal.
+- Una consulta real desde la interfaz reconoció VLAN 10 para Administración y
+  la versión de IOS pendiente usando los datos del formulario. También se observó
+  el mensaje de error de conexión sin perder el caso abierto. El servicio local
+  se dejó en frontend 5501 y backend 8000, sin usar el puerto 5500 de Oracle.
+- Pasaron 11 pruebas unitarias (nueve existentes y dos nuevas para el contrato de
+  contexto/evidencia y rechazo de evidencia demasiado extensa). En esta ejecución
+  se simuló la dependencia de embeddings para no cargar PyTorch en las pruebas
+  unitarias; la consulta del navegador sí utilizó el servicio RAG real.
+- No se implementó el generador estructurado, el diagnóstico automático ni la
+  persistencia en base de datos. No se realizaron pruebas de configuración en
+  Packet Tracer. El mockup original sigue siendo una referencia independiente.

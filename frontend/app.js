@@ -1,42 +1,14 @@
-/* Cliente sencillo de chat: la memoria se conserva en el navegador, nunca en claves API. */
 "use strict";
-
 const API_BASE = "http://localhost:8000";
-const STORAGE_KEY = "netassist.historial.v1";
-const messagesElement = document.getElementById("messages");
-const chatForm = document.getElementById("chat-form");
-const inputElement = document.getElementById("message-input");
-const sendButton = document.getElementById("send-button");
-const typingIndicator = document.getElementById("typing-indicator");
-const contactDialog = document.getElementById("contact-dialog");
-const contactDetails = document.getElementById("contact-details");
-
-let history = loadHistory();
+const $ = (id) => document.getElementById(id);
+let activeCase = null;
+let history = [];
 let supportContact = "Contacta al docente o técnico responsable del laboratorio.";
-
-function loadHistory() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (!Array.isArray(stored)) return [];
-    return stored.filter(
-      (item) =>
-        item &&
-        (item.role === "user" || item.role === "assistant") &&
-        typeof item.content === "string"
-    );
-  } catch (error) {
-    console.error("No se pudo leer el historial guardado:", error);
-    return [];
-  }
-}
-
-function saveHistory() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-  } catch (error) {
-    console.error("No se pudo guardar el historial:", error);
-  }
-}
+let busy = false;
+const messagesElement = $("messages");
+const inputElement = $("message-input");
+const chatPanel = $("chat-panel");
+const tabs = [...document.querySelectorAll('[role="tab"]')];
 
 function escapeHtml(text) {
   return text.replace(/[&<>"']/g, (character) => {
@@ -98,121 +70,189 @@ function renderMarkdown(text) {
   return resultado.join("");
 }
 
+
 function appendMessage(role, content, persist = true) {
   const article = document.createElement("article");
   article.className = `message message-${role}`;
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  if (role === "assistant") {
-    bubble.innerHTML = renderMarkdown(content);
-  } else {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = content;
-    bubble.appendChild(paragraph);
-  }
+  if (role === "assistant") bubble.innerHTML = renderMarkdown(content);
+  else { const p = document.createElement("p"); p.textContent = content; bubble.append(p); }
   const meta = document.createElement("span");
   meta.className = "message-meta";
   meta.textContent = role === "assistant" ? "NetAssist" : "Tú";
   article.append(bubble, meta);
-  messagesElement.appendChild(article);
+  messagesElement.append(article);
   messagesElement.scrollTop = messagesElement.scrollHeight;
-  if (persist) {
-    history.push({ role, content });
-    saveHistory();
+  if (persist) history.push({role, content});
+}
+function welcome() {
+  messagesElement.replaceChildren();
+  appendMessage("assistant", activeCase
+    ? "Ya conozco los requisitos de esta práctica. Puedes preguntarme sobre las VLAN, completar datos o consultar una salida. Las recomendaciones necesitan revisión en tu equipo."
+    : "Hola, soy NetAssist. Abre una práctica desde el formulario y te acompañaré con el contexto de tu equipo y tus VLAN.", false);
+}
+function openChat() {
+  chatPanel.hidden = false;
+  $("chat-launcher").hidden = true;
+  $("chat-launcher").setAttribute("aria-expanded", "true");
+  inputElement.focus();
+  messagesElement.scrollTop = messagesElement.scrollHeight;
+}
+function closeChat() {
+  chatPanel.hidden = true;
+  $("chat-launcher").hidden = false;
+  $("chat-launcher").setAttribute("aria-expanded", "false");
+  $("chat-launcher").focus();
+}
+$("chat-launcher").addEventListener("click", openChat);
+$("minimize-chat").addEventListener("click", closeChat);
+$("expand-chat").addEventListener("click", () => {
+  const expanded = chatPanel.classList.toggle("expanded");
+  $("expand-chat").setAttribute("aria-expanded", String(expanded));
+  $("expand-chat").setAttribute("aria-label", expanded ? "Reducir chat" : "Ampliar chat");
+});
+chatPanel.addEventListener("keydown", (event) => { if (event.key === "Escape") closeChat(); });
+$("ask-case-button").addEventListener("click", openChat);
+$("new-chat-button").addEventListener("click", () => { if (!busy) { history = []; welcome(); inputElement.value = ""; inputElement.focus(); } });
+function activateTab(tab, focus = false) {
+  for (const item of tabs) {
+    const selected = item === tab;
+    item.setAttribute("aria-selected", String(selected));
+    item.tabIndex = selected ? 0 : -1;
+    $(item.getAttribute("aria-controls")).hidden = !selected;
   }
+  if (focus) tab.focus();
 }
-
-function restoreHistory() {
-  for (const message of history) appendMessage(message.role, message.content, false);
+tabs.forEach((tab, i) => {
+  tab.addEventListener("click", () => activateTab(tab));
+  tab.addEventListener("keydown", (event) => {
+    let index;
+    if (event.key === "ArrowRight") index = (i + 1) % tabs.length;
+    if (event.key === "ArrowLeft") index = (i + tabs.length - 1) % tabs.length;
+    if (event.key === "Home") index = 0;
+    if (event.key === "End") index = tabs.length - 1;
+    if (index !== undefined) { event.preventDefault(); activateTab(tabs[index], true); }
+  });
+});
+function readCase() {
+  const data = new FormData($("case-form"));
+  const value = (key) => String(data.get(key) || "").trim();
+  return {
+    title: value("title"), model: value("model"), version: value("version"),
+    connections: value("connections"), vendor: "Cisco IOS",
+    groups: [
+      {name: "Administración", vlan: value("adminVlan"), ports: value("adminPorts")},
+      {name: "Laboratorio", vlan: value("labVlan"), ports: value("labPorts")}
+    ], review_command: "", evidence: ""
+  };
 }
-
-async function fetchContact() {
-  try {
-    const response = await fetch(`${API_BASE}/contacto`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (typeof data.contact === "string" && data.contact.trim()) {
-      supportContact = data.contact;
-    }
-  } catch (error) {
-    console.error("No se pudo consultar el contacto configurado:", error);
+function renderCase() {
+  $("empty-case").hidden = true; $("case-content").hidden = false;
+  $("case-heading").textContent = activeCase.title;
+  $("chat-context").textContent = activeCase.title;
+  $("launcher-context").textContent = activeCase.title;
+  $("open-case-button").textContent = "Actualizar práctica ↗";
+  const missing = [];
+  if (!activeCase.model) missing.push("modelo del switch");
+  if (!activeCase.version) missing.push("versión de IOS");
+  for (const group of activeCase.groups) {
+    if (!group.vlan) missing.push(`VLAN de ${group.name}`);
+    if (!group.ports) missing.push(`puertos de ${group.name}`);
   }
+  $("case-status").textContent = missing.length ? "Datos incompletos" : "Requisitos registrados";
+  $("case-status").classList.add("open");
+  const safe = escapeHtml;
+  $("case-summary").className = "summary";
+  $("case-summary").innerHTML = `<h3>Requisitos de la práctica</h3><dl><dt>Equipo</dt><dd>Cisco IOS · ${safe(activeCase.model || "Modelo pendiente")}</dd><dt>Versión</dt><dd>${safe(activeCase.version || "Pendiente de identificar")}</dd><dt>Conexiones</dt><dd>${safe(activeCase.connections || "Sin especificar")}</dd></dl><div class="group-summary">${activeCase.groups.map(g => `<div><h3>${safe(g.name)}</h3><p>VLAN ${safe(g.vlan || "pendiente")}</p><p>${safe(g.ports || "Puertos pendientes")}</p></div>`).join("")}</div>${missing.length ? `<p class="missing-list">Por completar: ${missing.map(safe).join(", ")}. Puedes registrar estos datos y consultar al asistente.</p>` : ""}`;
+  for (const id of ["review-command", "evidence-input", "save-evidence-button"]) $(id).disabled = false;
+  $("evidence-input").placeholder = "Pega aquí la salida que obtuviste en Packet Tracer…";
 }
-
-chatForm.addEventListener("submit", async (event) => {
+$("case-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (busy) return;
+  const nextCase = readCase();
+  if (!nextCase.title) { $("form-error").textContent = "Escribe un nombre para la práctica."; return; }
+  $("form-error").textContent = "";
+  // Una edición inicia una revisión del caso y descarta evidencia e historial antiguos.
+  activeCase = nextCase; history = [];
+  $("review-command").value = ""; $("evidence-input").value = "";
+  $("evidence-status").textContent = "No hay evidencia aportada.";
+  renderCase(); welcome(); activateTab(tabs[0]);
+  $("case-heading").setAttribute("tabindex", "-1"); $("case-heading").focus();
+});
+$("example-button").addEventListener("click", () => {
+  const example = {"case-title":"Separar Administración y Laboratorio", "device-model":"Catalyst 2960", "ios-version":"", "admin-vlan":"10", "admin-ports":"Fa0/1, Fa0/2", "lab-vlan":"20", "lab-ports":"Fa0/3, Fa0/4", "connections":"Un switch con cuatro PC, dos por grupo. Confirmar el modelo y la versión en Packet Tracer."};
+  for (const [id, value] of Object.entries(example)) $(id).value = value;
+  $("case-title").focus();
+});
+$("save-evidence-button").addEventListener("click", () => {
+  if (!activeCase || busy) return;
+  activeCase.review_command = $("review-command").value.trim();
+  activeCase.evidence = $("evidence-input").value.trim();
+  $("evidence-status").textContent = activeCase.evidence
+    ? "Evidencia incorporada al contexto del chat. Aún no se ha analizado ni verificado."
+    : "No hay evidencia aportada.";
+});
+for (const id of ["review-command", "evidence-input"]) $(id).addEventListener("input", () => {
+  $("evidence-status").textContent = "Hay cambios pendientes de incorporar al caso.";
+});
+function setBusy(value) {
+  busy = value;
+  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button"]) $(id).disabled = value;
+  if (activeCase) $("save-evidence-button").disabled = value;
+  $("typing-indicator").hidden = !value;
+}
+$("chat-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const content = inputElement.value.trim();
-  if (!content || sendButton.disabled) return;
-
-  appendMessage("user", content);
-  inputElement.value = "";
-  sendButton.disabled = true;
-  typingIndicator.classList.remove("hidden");
-  messagesElement.scrollTop = messagesElement.scrollHeight;
-
+  if (!content || busy) return;
+  appendMessage("user", content); inputElement.value = ""; setBusy(true);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
   try {
     const response = await fetch(`${API_BASE}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: history }),
+      method: "POST", headers: {"Content-Type":"application/json"}, signal: controller.signal,
+      body: JSON.stringify({messages: history.slice(-40), context: activeCase})
     });
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.detail || `El servidor respondió HTTP ${response.status}`);
-    }
-    if (typeof data.reply !== "string" || !data.reply.trim()) {
-      throw new Error("El servidor devolvió una respuesta vacía.");
-    }
-    if (typeof data.contact === "string" && data.contact.trim()) {
-      supportContact = data.contact;
-    }
+    if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Respuesta no disponible");
+    if (typeof data.contact === "string" && data.contact.trim()) supportContact = data.contact;
     appendMessage("assistant", data.reply);
-  } catch (error) {
-    console.error("Falló la solicitud de chat:", error);
-    appendMessage(
-      "assistant",
-      `No pude comunicarme con el servicio de NetAssist. Verifica que el backend esté iniciado o contacta al docente o técnico: ${supportContact}`
-    );
+  } catch {
+    appendMessage("assistant", `No pude obtener una respuesta. Puedes volver a intentarlo; tu práctica sigue abierta. Contacto: ${supportContact}`, false);
   } finally {
-    typingIndicator.classList.add("hidden");
-    sendButton.disabled = false;
-    inputElement.focus();
+    clearTimeout(timer); setBusy(false);
+    if (!chatPanel.hidden) inputElement.focus();
   }
 });
-
-document.getElementById("new-chat-button").addEventListener("click", () => {
-  history = [];
-  saveHistory();
-  messagesElement.replaceChildren();
-  appendMessage(
-    "assistant",
-    "¡Hola! Soy NetAssist. Cuéntame qué problema tienes y, si puedes, incluye la marca, el modelo, la versión de RouterOS o IOS y el error exacto."
-  );
-});
-
-function openContactDialog() {
-  contactDetails.textContent = supportContact;
-  contactDialog.showModal();
-}
-
-document.getElementById("contact-button").addEventListener("click", openContactDialog);
-document.getElementById("close-contact-button").addEventListener("click", () => contactDialog.close());
-document.getElementById("dialog-ok-button").addEventListener("click", () => contactDialog.close());
-
-messagesElement.addEventListener("click", async (event) => {
+document.addEventListener("click", async (event) => {
   const button = event.target.closest(".copy-button");
   if (!button) return;
-  const code = button.parentElement.querySelector("code").textContent;
   try {
-    await navigator.clipboard.writeText(code);
+    await navigator.clipboard.writeText(button.parentElement.querySelector("code").textContent);
     button.textContent = "Copiado";
-    window.setTimeout(() => (button.textContent = "Copiar"), 1400);
-  } catch (error) {
-    console.error("No se pudo copiar el bloque de código:", error);
-    button.textContent = "No disponible";
-    window.setTimeout(() => (button.textContent = "Copiar"), 1400);
-  }
+  } catch { button.textContent = "Selecciona el texto"; }
+  setTimeout(() => button.textContent = "Copiar", 1800);
 });
-
-restoreHistory();
-fetchContact();
+async function loadService() {
+  const status = $("service-status");
+  try {
+    const response = await fetch(`${API_BASE}/health`, {signal: AbortSignal.timeout(5000)});
+    if (!response.ok) throw new Error();
+    const data = await response.json();
+    status.textContent = data.rag_ready ? "Servicio conectado" : "Manuales no disponibles";
+    status.classList.toggle("online", Boolean(data.rag_ready));
+    status.classList.toggle("offline", !data.rag_ready);
+  } catch { status.textContent = "Servicio sin conexión"; status.classList.add("offline"); }
+  try {
+    const response = await fetch(`${API_BASE}/contacto`, {signal: AbortSignal.timeout(5000)});
+    if (!response.ok) return;
+    const data = await response.json();
+    if (typeof data.contact === "string" && data.contact.trim()) supportContact = data.contact;
+  } catch { /* Se conserva el contacto de ayuda local. */ }
+}
+$("contact-button").addEventListener("click", () => { $("contact-details").textContent = supportContact; $("contact-dialog").showModal(); });
+for (const id of ["close-contact-button", "dialog-ok-button"]) $(id).addEventListener("click", () => $("contact-dialog").close());
+$("service-status").addEventListener("click", loadService);
+welcome(); loadService();
