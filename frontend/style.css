@@ -1311,6 +1311,16 @@ dialog::backdrop {
   }
 }
 
+#evidence-records pre, #diagnosis-output pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 280px;
+  overflow: auto;
+}
+#evidence-records details { margin: 12px 0; }
+#evidence-records summary { cursor: pointer; overflow-wrap: anywhere; }
+#diagnose-button { margin: 12px 0; }
+
 @media(prefers-reduced-motion:reduce) {
   * {
     scroll-behavior:auto!important;

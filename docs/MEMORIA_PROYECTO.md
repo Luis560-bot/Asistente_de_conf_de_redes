@@ -124,6 +124,31 @@ Registrar cambios de alcance, nuevas decisiones y evidencia real de finalizació
   Por ello la fase 3 sigue abierta hasta completar esa aceptación. El análisis
   automático de salidas y la persistencia de casos siguen pendientes en fases 4 y 5.
 
+## Fase 4: diagnóstico implementado (8 de noviembre de 2026)
+
+- A petición del usuario se continúa con fase 4; la aceptación real en Packet
+  Tracer de fase 3 sigue pendiente y no se considera completada por este avance.
+- `POST /diagnosticar` contrasta por código `show vlan brief` y
+  `show interfaces <puerto> switchport`. Cada hallazgo contiene observado,
+  esperado, fragmento literal, número de captura y siguiente paso. Formatos no
+  reconocidos y campos insuficientes no se dan por verificados; la ausencia de
+  una fila o puerto no se interpreta como fallo.
+- La interfaz conserva hasta 12 capturas con comando y salida en memoria de la
+  pestaña, permite retirarlas y usa la más reciente por comando. Los pasos
+  reconocidos se excluyen de la lista de comandos pendientes. Tras corregir
+  una discrepancia se solicita evidencia nueva. El chat recibe el contraste
+  recalculado por el servidor junto a los pasos registrados.
+- El diagnóstico funciona sin proveedores ni RAG. No ejecuta comandos, no
+  verifica conectividad y no inicializa nuevas bases. Persistencia y exportación
+  continúan pendientes en fase 5. Los detalles y límites están en `docs/FASE_4.md`.
+- Las pruebas de desarrollo usan capturas sintéticas; no representan evidencia
+  obtenida de un switch ni una práctica ejecutada en Packet Tracer.
+- Pasaron 27 pruebas automatizadas (embeddings simulados en las unitarias),
+  comprobación de sintaxis JavaScript y revisión de formato del diff. En la web
+  se comprobó la detección de modo trunk/VLAN incorrecta, la incorporación de una
+  captura corregida y el uso de esa nueva captura conservando la anterior. Las
+  capturas utilizadas en navegador también eran sintéticas.
+
 ## Comprobación posterior de proveedores
 
 Se configuró localmente la credencial de Gemini aportada por el usuario, sin

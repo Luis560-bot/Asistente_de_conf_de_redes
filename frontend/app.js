@@ -144,7 +144,7 @@ function readCase() {
     groups: [
       {name: "Administración", vlan: value("adminVlan"), ports: value("adminPorts")},
       {name: "Laboratorio", vlan: value("labVlan"), ports: value("labPorts")}
-    ], review_command: "", evidence: ""
+    ], review_command: "", evidence: "", evidence_records: []
   };
 }
 function renderCase() {
@@ -165,7 +165,7 @@ function renderCase() {
   const safe = escapeHtml;
   $("case-summary").className = "summary";
   $("case-summary").innerHTML = `<h3>Requisitos de la práctica</h3><dl><dt>Equipo</dt><dd>Cisco IOS · ${safe(activeCase.model || "Modelo pendiente")}</dd><dt>Versión</dt><dd>${safe(activeCase.version || "Pendiente de identificar")}</dd><dt>Conexiones</dt><dd>${safe(activeCase.connections || "Sin especificar")}</dd></dl><div class="group-summary">${activeCase.groups.map(g => `<div><h3>${safe(g.name)}</h3><p>VLAN ${safe(g.vlan || "pendiente")}</p><p>${safe(g.ports || "Puertos pendientes")}</p></div>`).join("")}</div>${missing.length ? `<p class="missing-list">Por completar: ${missing.map(safe).join(", ")}. Puedes registrar estos datos y consultar al asistente.</p>` : ""}`;
-  for (const id of ["review-command", "evidence-input", "save-evidence-button"]) $(id).disabled = false;
+  for (const id of ["review-command", "evidence-input", "save-evidence-button", "diagnose-button"]) $(id).disabled = false;
   $("evidence-input").placeholder = "Pega aquí la salida que obtuviste en Packet Tracer…";
 }
 $("case-form").addEventListener("submit", (event) => {
@@ -176,6 +176,7 @@ $("case-form").addEventListener("submit", (event) => {
   $("form-error").textContent = "";
   // Una edición inicia una revisión del caso y descarta evidencia e historial antiguos.
   activeCase = nextCase; history = [];
+  $("evidence-records").replaceChildren(); $("diagnosis-output").replaceChildren();
   $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = "";
   $("review-command").value = ""; $("evidence-input").value = "";
   $("evidence-status").textContent = "No hay evidencia aportada.";
@@ -189,18 +190,22 @@ $("example-button").addEventListener("click", () => {
 });
 $("save-evidence-button").addEventListener("click", () => {
   if (!activeCase || busy) return;
-  activeCase.review_command = $("review-command").value.trim();
-  activeCase.evidence = $("evidence-input").value.trim();
-  $("evidence-status").textContent = activeCase.evidence
-    ? "Evidencia incorporada al contexto del chat. Aún no se ha analizado ni verificado."
-    : "No hay evidencia aportada.";
+  const command = $("review-command").value.trim();
+  const output = $("evidence-input").value.trim();
+  if (!command || !output) { $("evidence-status").textContent = "Escribe el comando y pega su salida antes de incorporarlos."; return; }
+  if (activeCase.evidence_records.length >= 12) { $("evidence-status").textContent = "Límite de 12 capturas por práctica. Retira una captura antes de añadir otra."; return; }
+  activeCase.evidence_records.push({command, output});
+  activeCase.review_command = command; activeCase.evidence = output;
+  $("diagnosis-output").replaceChildren();
+  renderEvidence();
+  $("evidence-status").textContent = "Captura incorporada. Pulsa Analizar evidencia para actualizar el contraste.";
 });
 for (const id of ["review-command", "evidence-input"]) $(id).addEventListener("input", () => {
   $("evidence-status").textContent = "Hay cambios pendientes de incorporar al caso.";
 });
 function setBusy(value) {
   busy = value;
-  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "generate-button"]) $(id).disabled = value;
+  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "generate-button", "diagnose-button"]) $(id).disabled = value;
   if (activeCase) $("save-evidence-button").disabled = value;
   $("typing-indicator").hidden = !value;
 }
@@ -283,4 +288,32 @@ $("generate-button").addEventListener("click", async () => {
   } catch {
     $("generation-status").textContent = "No se pudo generar la propuesta. Revisa la conexión y vuelve a intentarlo.";
   } finally { setBusy(false); }
+});
+
+function renderEvidence() {
+  $("evidence-records").innerHTML = `<h3>Pasos registrados (${activeCase.evidence_records.length}/12)</h3>` + activeCase.evidence_records.map((r, i) => `<details><summary>Captura ${i + 1}: ${escapeHtml(r.command)}</summary><pre>${escapeHtml(r.output)}</pre><button class="button secondary" type="button" data-remove-evidence="${i}">Retirar captura ${i + 1}</button></details>`).join("");
+}
+$("evidence-records").addEventListener("click", event => {
+  const button = event.target.closest("[data-remove-evidence]");
+  if (!button || busy || !activeCase) return;
+  activeCase.evidence_records.splice(Number(button.dataset.removeEvidence), 1);
+  const last = activeCase.evidence_records.at(-1);
+  activeCase.review_command = last?.command || ""; activeCase.evidence = last?.output || "";
+  $("diagnosis-output").replaceChildren(); renderEvidence();
+  $("evidence-status").textContent = "Captura retirada. Vuelve a analizar las restantes.";
+});
+$("diagnose-button").addEventListener("click", async () => {
+  if (!activeCase || busy) return;
+  setBusy(true);
+  $("evidence-status").textContent = "Contrastando capturas…";
+  try {
+    const response = await fetch(`${API_BASE}/diagnosticar`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(activeCase), signal: AbortSignal.timeout(15000)});
+    if (!response.ok) throw new Error();
+    const data = await response.json();
+    const safe = escapeHtml;
+    const labels = {compared: "Evidencia contrastada", discrepancies: "Discrepancias en la evidencia", insufficient: "Evidencia insuficiente"};
+    $("diagnosis-output").innerHTML = `<h3>${labels[data.status]}</h3><p>${safe(data.limits)}</p>${data.requirements?.length ? `<p>Completa o corrige los requisitos: ${data.requirements.map(safe).join("; ")}</p>` : ""}<h3>Hallazgos</h3>${data.findings.length ? data.findings.map(f => `<article class="notice"><strong>${f.status === "match" ? "Coincide" : "Discrepancia"}: ${safe(f.label)}</strong><p>Observado: ${safe(f.actual)}. Esperado: ${safe(f.expected)}.</p><p>Captura ${f.record}:</p><pre>${safe(f.evidence)}</pre><p>Siguiente paso: ${safe(f.next_step)}</p></article>`).join("") : "<p>No hay campos suficientes para sostener un hallazgo.</p>"}<h3>Pasos revisados</h3><ul>${data.steps.map(s => `<li>Captura ${s.record} · ${safe(s.command)}: ${safe(s.note)}</li>`).join("")}</ul><h3>Próximas comprobaciones</h3><ul>${data.next_steps.map(s => `<li><code>${safe(s.command)}</code> ${safe(s.reason)}</li>`).join("")}</ul>`;
+    $("evidence-status").textContent = "Contraste actualizado. No se han ejecutado comandos ni verificado la red.";
+  } catch { $("evidence-status").textContent = "No se pudo analizar la evidencia. Las capturas siguen en el caso; vuelve a intentarlo."; }
+  finally { setBusy(false); }
 });

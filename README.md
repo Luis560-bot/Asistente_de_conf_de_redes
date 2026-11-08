@@ -102,6 +102,7 @@ netassist/
 - `POST /chat`: recibe `{ "messages": [{ "role": "user|assistant", "content": "..." }] }`, recupera hasta cuatro fragmentos relevantes y devuelve `{ "reply": "...", "contact": "..." }`.
 - `POST /reindexar`: reconstruye el índice desde los documentos actuales de `docs/`.
 - `POST /generar`: recibe los requisitos del caso, indica datos faltantes o errores y genera una propuesta Cisco VLAN/acceso independiente del proveedor. Ver [fase 3](docs/FASE_3.md).
+- `POST /diagnosticar`: contrasta capturas de VLAN y switchport, cita evidencia y propone comprobaciones pendientes. Ver [fase 4](docs/FASE_4.md).
 - `GET /health`: informa el estado de la API y del índice RAG.
 - `GET /contacto`: devuelve el contacto de derivación configurado.
 
@@ -156,9 +157,10 @@ versión de IOS, VLAN y puertos después; el panel mostrará lo que falta. Pulsa
 ejemplo** precarga un escenario ilustrativo que debes revisar.
 
 - **Configuración:** resumen de requisitos y datos pendientes. Pulsa **Generar configuración** para obtener comandos, explicaciones, reglas comprobadas y límites. El modelo y la versión son obligatorios; su compatibilidad requiere revisión manual.
-- **Comprobaciones:** comando en revisión y salida pegada manualmente. Pulsa
-  **Incorporar al caso** para que el chat reciba esa evidencia. No se verifica
-  automáticamente ni se considera prueba de conectividad.
+- **Comprobaciones:** incorpora una captura por comando y pulsa **Analizar evidencia**.
+  Se contrastan `show vlan brief` y `show interfaces <puerto> switchport`; los
+  hallazgos citan el fragmento y la captura. Conserva hasta 12 registros en la
+  pestaña y usa el más reciente por comando. Esto no prueba conectividad.
 - **Fuentes:** referencias disponibles para este escenario.
 - **Tu asistente:** chat contextual, minimizable y ampliable, conectado a `/chat`.
 
@@ -170,6 +172,10 @@ El indicador de conexión permite volver a comprobar el servicio al pulsarlo.
 `model`, `version`, `connections`, `groups` (dos objetos con `name`, `vlan`, `ports`),
 `review_command` y `evidence`. Sus tamaños están limitados; los mensajes sin
 contexto continúan admitidos.
+
+Desde fase 4 se añade `evidence_records` (hasta 12 objetos `{command, output}`)
+al contexto. El chat recibe el diagnóstico calculado y los pasos registrados.
+Los registros permanecen en memoria de la pestaña y no se guardan en una base.
 
 En este equipo usa el puerto **5501** para el frontend y configura
 `FRONTEND_ORIGIN=http://localhost:5501`; el puerto 5500 pertenece a otro servicio.

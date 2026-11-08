@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from .config import FRONTEND_ORIGIN, SUPPORT_CONTACT
 from .llm import MENSAJE_FALLBACK, llamar_llm
 from .generator import generate
+from .diagnostics import diagnose
 from .rag import RagService, formatear_contexto
 
 logging.basicConfig(level=logging.INFO)
@@ -56,6 +57,11 @@ class GrupoVlan(BaseModel):
     ports: str = Field(default="", max_length=200)
 
 
+class RegistroEvidencia(BaseModel):
+    command: str = Field(min_length=1, max_length=300)
+    output: str = Field(min_length=1, max_length=8000)
+
+
 class ContextoPractica(BaseModel):
     """Datos aportados desde el formulario; no representan una configuración verificada."""
 
@@ -67,6 +73,7 @@ class ContextoPractica(BaseModel):
     groups: list[GrupoVlan] = Field(min_length=2, max_length=2)
     review_command: str = Field(default="", max_length=300)
     evidence: str = Field(default="", max_length=8000)
+    evidence_records: list[RegistroEvidencia] = Field(default_factory=list, max_length=12)
 
 
 class SolicitudChat(BaseModel):
@@ -87,6 +94,12 @@ class RespuestaChat(BaseModel):
 async def generar(caso: ContextoPractica) -> dict:
     """Validación y propuesta reproducible, independiente del proveedor y del índice."""
     return generate(caso)
+
+
+@app.post("/diagnosticar")
+async def diagnosticar(caso: ContextoPractica) -> dict:
+    """Contrasta evidencia aportada sin depender del proveedor o del índice."""
+    return diagnose(caso)
 
 
 @app.get("/health")
@@ -145,8 +158,10 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
                 + datos
                 + "\nPropuesta de referencia calculada por código para estos requisitos:\n"
                 + json.dumps(generate(caso), ensure_ascii=False)
+                + "\nContraste por código y pasos registrados (no repetir pasos reconocidos salvo cambios posteriores):\n"
+                + json.dumps(diagnose(caso), ensure_ascii=False)
                 + "\nNo hay pruebas de laboratorio verificadas. "
-                "La evidencia pegada no ha sido contrastada automáticamente.\nConsulta del usuario:\n"
+                "La evidencia no reconocida no ha sido contrastada automáticamente.\nConsulta del usuario:\n"
                 + mensajes[-1]["content"]
             )
         fragmentos = await run_in_threadpool(rag_service.buscar, consulta)
