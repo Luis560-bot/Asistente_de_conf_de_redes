@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101e2c"><title>NetAssist | Laboratorio de redes</title>
-  <link rel="stylesheet" href="style.css"><script src="app.js?v=4" defer></script>
+  <link rel="stylesheet" href="style.css"><script src="app.js?v=5.1" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -17,7 +17,7 @@
     <header class="topbar"><span>Espacio de trabajo <span class="slash">/</span> <strong>Laboratorio</strong></span><button id="service-status" class="service-status" type="button" aria-live="polite" title="Volver a comprobar la conexión">Comprobando servicio…</button></header>
     <main>
       <div class="page-heading"><div><p class="eyebrow">APRENDE · CONFIGURA · COMPRUEBA</p><h1>Tu próxima red empieza aquí.</h1><p>Organiza una práctica Cisco y entiende cada paso con tu asistente.</p></div><span class="scope-tag">CISCO IOS <span>VLAN + ACCESO</span></span></div>
-      <div class="lab-grid">
+      <section class="card case-library" aria-label="Prácticas guardadas"><h2>Mis prácticas</h2><p>Guarda explícitamente antes de salir. Los campos editados se aplican al pulsar Actualizar práctica; las salidas se aplican al incorporarlas al caso.</p><div class="case-actions"><select id="saved-cases" aria-label="Prácticas guardadas"><option value="">Selecciona una práctica</option></select><button id="refresh-cases" type="button" class="button secondary">Actualizar lista</button><button id="load-case" type="button" class="button secondary">Abrir guardada</button><button id="new-case" type="button" class="button secondary">Nueva práctica</button><button id="save-case" type="button" class="button primary" disabled>Guardar práctica</button><button id="export-html" type="button" class="button secondary" disabled>Exportar informe HTML</button><button id="export-json" type="button" class="button secondary" disabled>Exportar JSON</button></div><p id="storage-status" role="status">Cargando prácticas…</p></section><div class="lab-grid">
         <section class="card setup-card" aria-labelledby="setup-title">
           <div class="section-heading"><span class="step-number">01</span><div><h2 id="setup-title">Prepara tu práctica</h2><p>Define el equipo y los dos grupos.</p></div></div>
           <form id="case-form">
@@ -31,7 +31,7 @@
             <p id="form-error" class="error-text" role="alert"></p>
             <button class="button primary full-width" type="submit" id="open-case-button">Abrir práctica <span aria-hidden="true">↗</span></button>
             <button class="button text-button full-width" type="button" id="example-button">Completar con un ejemplo</button>
-            <p class="privacy-note">La práctica permanece en esta pestaña. Actualizarla reinicia su chat y evidencia. No ingreses claves ni contraseñas.</p>
+            <p class="privacy-note">Pulsa Guardar práctica para conservar el caso. Actualizar los requisitos reinicia su chat y evidencia hasta el próximo guardado. No ingreses claves ni contraseñas.</p>
           </form>
         </section>
         <section class="card results-card" aria-labelledby="case-heading">

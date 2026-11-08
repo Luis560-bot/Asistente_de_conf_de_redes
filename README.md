@@ -105,8 +105,10 @@ netassist/
 - `POST /diagnosticar`: contrasta capturas de VLAN y switchport, cita evidencia y propone comprobaciones pendientes. Ver [fase 4](docs/FASE_4.md).
 - `GET /health`: informa el estado de la API y del índice RAG.
 - `GET /contacto`: devuelve el contacto de derivación configurado.
+- `GET/POST /casos`, `GET/PUT /casos/{id}`: guardado y recuperación local con revisiones.
+- `GET /casos/{id}/informe?formato=html|json`: exportación del caso guardado. Ver [fase 5](docs/FASE_5.md).
 
-La interfaz de laboratorio conserva el caso y el chat en memoria de la pestaña. Recargar la página los borra; actualizar la práctica reinicia chat y evidencia. Se envían los últimos 40 mensajes y el contexto del caso en cada consulta. El historial del prototipo guardado en `localStorage` no se reutiliza. No ingreses contraseñas ni datos sensibles.
+La interfaz conserva los cambios en memoria hasta pulsar **Guardar práctica**. Los casos guardados pueden reabrirse con requisitos, resultados, capturas y chat; recargar descarta los cambios sin guardar. Actualizar requisitos reinicia chat y evidencia en memoria. Se envían los últimos 40 mensajes y el contexto del caso en cada consulta. El historial del prototipo guardado en `localStorage` no se reutiliza. No ingreses contraseñas ni datos sensibles.
 
 ## RAG y relevancia
 
@@ -164,8 +166,9 @@ ejemplo** precarga un escenario ilustrativo que debes revisar.
 - **Fuentes:** referencias disponibles para este escenario.
 - **Tu asistente:** chat contextual, minimizable y ampliable, conectado a `/chat`.
 
-La práctica se mantiene en la pestaña. Recargar la página borra sus datos;
-actualizarla reinicia chat y evidencia. La persistencia pertenece a la fase 5.
+Pulsa **Guardar práctica** para conservar el caso en SQLite y reabrirlo desde
+**Mis prácticas**. Recargar descarta cambios sin guardar; actualizar requisitos
+reinicia chat y evidencia en memoria. Consulta [fase 5](docs/FASE_5.md).
 El indicador de conexión permite volver a comprobar el servicio al pulsarlo.
 
 `POST /chat` admite un objeto `context` opcional con `title`, `vendor` (Cisco IOS),
@@ -175,7 +178,7 @@ contexto continúan admitidos.
 
 Desde fase 4 se añade `evidence_records` (hasta 12 objetos `{command, output}`)
 al contexto. El chat recibe el diagnóstico calculado y los pasos registrados.
-Los registros permanecen en memoria de la pestaña y no se guardan en una base.
+Los registros permanecen en memoria hasta pulsar Guardar práctica; entonces se conservan con el caso.
 
 En este equipo usa el puerto **5501** para el frontend y configura
 `FRONTEND_ORIGIN=http://localhost:5501`; el puerto 5500 pertenece a otro servicio.

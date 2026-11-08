@@ -1320,6 +1320,9 @@ dialog::backdrop {
 #evidence-records details { margin: 12px 0; }
 #evidence-records summary { cursor: pointer; overflow-wrap: anywhere; }
 #diagnose-button { margin: 12px 0; }
+.case-library { padding: 20px; margin-bottom: 24px; }
+.case-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.case-actions select { max-width: 100%; padding: 10px; }
 
 @media(prefers-reduced-motion:reduce) {
   * {

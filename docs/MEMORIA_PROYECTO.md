@@ -81,7 +81,7 @@ El usuario exige que las conexiones y migraciones del programa no interfieran co
 
 - La persistencia vectorial actual está en `backend/chroma_db`, dentro del repositorio, y utiliza la colección `manuales_netassist`.
 - Antes de inicializar, migrar, reindexar o borrar datos, verificar el destino efectivo y que sea exclusivo de NetAssist. No asumir que un nombre o una variable de entorno garantiza aislamiento.
-- La base SQLite de casos prevista para la fase 5 debe tener su propio archivo dentro del almacenamiento del proyecto, separado del almacenamiento interno de ChromaDB. Su implementación sigue pendiente.
+- La base SQLite de fase 5 está en `.data/netassist/cases.sqlite3`, dentro del proyecto y separada del almacenamiento interno de ChromaDB. No se admiten destinos externos.
 - No reutilizar bases ajenas ni detener o reconfigurar sus servicios para ejecutar NetAssist.
 - Durante la preparación local se detectó el puerto 5500 ocupado por un proceso `tnslsnr` de Oracle; se eligió el puerto 5501 para el frontend y se mantuvo ese servicio existente.
 
@@ -148,6 +148,31 @@ Registrar cambios de alcance, nuevas decisiones y evidencia real de finalizació
   se comprobó la detección de modo trunk/VLAN incorrecta, la incorporación de una
   captura corregida y el uso de esa nueva captura conservando la anterior. Las
   capturas utilizadas en navegador también eran sintéticas.
+
+## Fase 5: guardado e informes (8 de noviembre de 2026)
+
+- Se implementó SQLite exclusivo en `.data/netassist/cases.sqlite3`, separado
+  de ChromaDB. La ruta es fija y se verifican padres, archivo y auxiliares antes
+  de abrir. Se rechazan redirecciones, enlaces físicos compartidos y bases sin
+  la identificación y versión propias de NetAssist. Los datos se excluyen de Git.
+- La interfaz permite guardar explícitamente, listar, reabrir y actualizar casos
+  con requisitos, capturas, conversación y resultados solicitados. Se pueden
+  guardar datos incompletos. Los resultados se calculan en el servidor al guardar.
+- Las revisiones evitan sobrescribir cambios de otra pestaña. No hay historial
+  completo de versiones ni autosalvado; editar requisitos sigue reiniciando chat
+  y evidencia del caso en memoria hasta que se guarde de nuevo.
+- Se implementó exportación HTML y JSON de la versión guardada. El informe
+  diferencia propuestas y contraste de capturas de la validación real en
+  laboratorio, que continúa pendiente. No se genera PDF ni se importan archivos.
+- Uso local, sin cuentas ni permisos multiusuario. El detalle está en
+  `docs/FASE_5.md`. La preparación de la demostración sigue en fase 6.
+- Se comprobó en navegador: guardar, recargar, reabrir requisitos/resultados y
+  evidencia sintética, guardar una segunda revisión y descargar el informe HTML.
+  Las pruebas unitarias usan SQLite real en carpetas temporales del proyecto y
+  embeddings simulados; no constituyen pruebas de configuración de redes.
+- Pasaron 35 pruebas automatizadas, la comprobación de sintaxis JavaScript y
+  la revisión de formato del diff. La base real de casos quedó dentro de la ruta
+  exclusiva indicada y contiene una práctica identificada como evidencia sintética.
 
 ## Comprobación posterior de proveedores
 

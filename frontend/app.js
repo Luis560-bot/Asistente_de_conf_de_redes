@@ -2,6 +2,9 @@
 const API_BASE = "http://localhost:8000";
 const $ = (id) => document.getElementById(id);
 let activeCase = null;
+let savedCase = null;
+let proposalSnapshot = null;
+let diagnosisSnapshot = null;
 let history = [];
 let supportContact = "Contacta al docente o técnico responsable del laboratorio.";
 let busy = false;
@@ -175,7 +178,8 @@ $("case-form").addEventListener("submit", (event) => {
   if (!nextCase.title) { $("form-error").textContent = "Escribe un nombre para la práctica."; return; }
   $("form-error").textContent = "";
   // Una edición inicia una revisión del caso y descarta evidencia e historial antiguos.
-  activeCase = nextCase; history = [];
+  activeCase = nextCase; history = []; proposalSnapshot = null; diagnosisSnapshot = null;
+  $("save-case").disabled = false;
   $("evidence-records").replaceChildren(); $("diagnosis-output").replaceChildren();
   $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = "";
   $("review-command").value = ""; $("evidence-input").value = "";
@@ -196,7 +200,7 @@ $("save-evidence-button").addEventListener("click", () => {
   if (activeCase.evidence_records.length >= 12) { $("evidence-status").textContent = "Límite de 12 capturas por práctica. Retira una captura antes de añadir otra."; return; }
   activeCase.evidence_records.push({command, output});
   activeCase.review_command = command; activeCase.evidence = output;
-  $("diagnosis-output").replaceChildren();
+  $("diagnosis-output").replaceChildren(); diagnosisSnapshot = null;
   renderEvidence();
   $("evidence-status").textContent = "Captura incorporada. Pulsa Analizar evidencia para actualizar el contraste.";
 });
@@ -207,6 +211,9 @@ function setBusy(value) {
   busy = value;
   for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "generate-button", "diagnose-button"]) $(id).disabled = value;
   if (activeCase) $("save-evidence-button").disabled = value;
+  for (const id of ["refresh-cases", "load-case", "new-case"]) $(id).disabled = value;
+  $("save-case").disabled = value || !activeCase;
+  for (const id of ["export-html", "export-json"]) $(id).disabled = value || !savedCase;
   $("typing-indicator").hidden = !value;
 }
 $("chat-form").addEventListener("submit", async (event) => {
@@ -274,17 +281,8 @@ $("generate-button").addEventListener("click", async () => {
     });
     if (!response.ok) throw new Error();
     const proposal = await response.json();
-    const safe = escapeHtml;
-    $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren();
-    if (proposal.status !== "proposed") {
-      $("case-status").textContent = proposal.errors.length ? "Requisitos por corregir" : "Datos incompletos";
-      $("generation-status").textContent = [...proposal.missing.map(x => `Falta: ${x}.`), ...proposal.errors].join(" ");
-      return;
-    }
-    $("case-status").textContent = "Propuesta generada";
-    $("generation-status").textContent = "Comprobaciones de código superadas. Prueba en laboratorio pendiente.";
-    $("proposal-output").innerHTML = `<h3>Configuración de referencia · un switch</h3><p>${safe(proposal.explanation)}</p>${renderMarkdown("```ios\n" + proposal.commands + "\n```")}<h3>Reglas comprobadas por código</h3><ul>${proposal.validations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><h3>Antes de aplicar</h3><ul>${proposal.limitations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><p>Después de revisar los resultados, guarda manualmente con <code>${safe(proposal.save_command)}</code>.</p><p>Fuente de la plantilla: <a href="${safe(proposal.sources[0].url)}" target="_blank" rel="noopener noreferrer">${safe(proposal.sources[0].title)}</a>. Comprueba su correspondencia con tu equipo.</p>`;
-    $("proposal-checks").innerHTML = `<h3>Plan de comprobación · pendiente de ejecutar</h3><ul>${proposal.checks.map(x => `<li><code>${safe(x.command)}</code><p>${safe(x.expected)}</p></li>`).join("")}</ul><p>En los PC configura direcciones de una misma subred para cada grupo y subredes distintas entre grupos. Registra IP, máscara, origen, destino y resultado de ping: dentro de cada VLAN debe responder; entre VLAN no habrá comunicación sin enrutamiento. Un ping fallido por sí solo no demuestra aislamiento por VLAN.</p>`;
+    proposalSnapshot = proposal;
+    renderProposal(proposal);
   } catch {
     $("generation-status").textContent = "No se pudo generar la propuesta. Revisa la conexión y vuelve a intentarlo.";
   } finally { setBusy(false); }
@@ -299,7 +297,7 @@ $("evidence-records").addEventListener("click", event => {
   activeCase.evidence_records.splice(Number(button.dataset.removeEvidence), 1);
   const last = activeCase.evidence_records.at(-1);
   activeCase.review_command = last?.command || ""; activeCase.evidence = last?.output || "";
-  $("diagnosis-output").replaceChildren(); renderEvidence();
+  $("diagnosis-output").replaceChildren(); diagnosisSnapshot = null; renderEvidence();
   $("evidence-status").textContent = "Captura retirada. Vuelve a analizar las restantes.";
 });
 $("diagnose-button").addEventListener("click", async () => {
@@ -310,10 +308,111 @@ $("diagnose-button").addEventListener("click", async () => {
     const response = await fetch(`${API_BASE}/diagnosticar`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(activeCase), signal: AbortSignal.timeout(15000)});
     if (!response.ok) throw new Error();
     const data = await response.json();
+    diagnosisSnapshot = data;
+    renderDiagnosis(data);
+  } catch { $("evidence-status").textContent = "No se pudo analizar la evidencia. Las capturas siguen en el caso; vuelve a intentarlo."; }
+  finally { setBusy(false); }
+});
+
+function renderProposal(proposal) {
+    const safe = escapeHtml;
+    $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren();
+    if (proposal.status !== "proposed") {
+      $("case-status").textContent = proposal.errors.length ? "Requisitos por corregir" : "Datos incompletos";
+      $("generation-status").textContent = [...proposal.missing.map(x => `Falta: ${x}.`), ...proposal.errors].join(" ");
+      return;
+    }
+    $("case-status").textContent = "Propuesta generada";
+    $("generation-status").textContent = "Comprobaciones de código superadas. Prueba en laboratorio pendiente.";
+    $("proposal-output").innerHTML = `<h3>Configuración de referencia · un switch</h3><p>${safe(proposal.explanation)}</p>${renderMarkdown("```ios\n" + proposal.commands + "\n```")}<h3>Reglas comprobadas por código</h3><ul>${proposal.validations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><h3>Antes de aplicar</h3><ul>${proposal.limitations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><p>Después de revisar los resultados, guarda manualmente con <code>${safe(proposal.save_command)}</code>.</p><p>Fuente de la plantilla: <a href="${safe(proposal.sources[0].url)}" target="_blank" rel="noopener noreferrer">${safe(proposal.sources[0].title)}</a>. Comprueba su correspondencia con tu equipo.</p>`;
+    $("proposal-checks").innerHTML = `<h3>Plan de comprobación · pendiente de ejecutar</h3><ul>${proposal.checks.map(x => `<li><code>${safe(x.command)}</code><p>${safe(x.expected)}</p></li>`).join("")}</ul><p>En los PC configura direcciones de una misma subred para cada grupo y subredes distintas entre grupos. Registra IP, máscara, origen, destino y resultado de ping: dentro de cada VLAN debe responder; entre VLAN no habrá comunicación sin enrutamiento. Un ping fallido por sí solo no demuestra aislamiento por VLAN.</p>`;
+}
+
+function renderDiagnosis(data) {
     const safe = escapeHtml;
     const labels = {compared: "Evidencia contrastada", discrepancies: "Discrepancias en la evidencia", insufficient: "Evidencia insuficiente"};
     $("diagnosis-output").innerHTML = `<h3>${labels[data.status]}</h3><p>${safe(data.limits)}</p>${data.requirements?.length ? `<p>Completa o corrige los requisitos: ${data.requirements.map(safe).join("; ")}</p>` : ""}<h3>Hallazgos</h3>${data.findings.length ? data.findings.map(f => `<article class="notice"><strong>${f.status === "match" ? "Coincide" : "Discrepancia"}: ${safe(f.label)}</strong><p>Observado: ${safe(f.actual)}. Esperado: ${safe(f.expected)}.</p><p>Captura ${f.record}:</p><pre>${safe(f.evidence)}</pre><p>Siguiente paso: ${safe(f.next_step)}</p></article>`).join("") : "<p>No hay campos suficientes para sostener un hallazgo.</p>"}<h3>Pasos revisados</h3><ul>${data.steps.map(s => `<li>Captura ${s.record} · ${safe(s.command)}: ${safe(s.note)}</li>`).join("")}</ul><h3>Próximas comprobaciones</h3><ul>${data.next_steps.map(s => `<li><code>${safe(s.command)}</code> ${safe(s.reason)}</li>`).join("")}</ul>`;
     $("evidence-status").textContent = "Contraste actualizado. No se han ejecutado comandos ni verificado la red.";
-  } catch { $("evidence-status").textContent = "No se pudo analizar la evidencia. Las capturas siguen en el caso; vuelve a intentarlo."; }
+}
+
+async function storageRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {...options, signal: AbortSignal.timeout(15000)}).catch(() => { throw new Error("No se pudo conectar con el almacenamiento. Revisa el servicio y vuelve a intentarlo."); });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(typeof data.detail === "string" ? data.detail : "No se pudo completar la operación. Revisa la conexión y vuelve a intentarlo.");
+  }
+  return response;
+}
+async function refreshCases() {
+  const rows = await (await storageRequest("/casos")).json();
+  $("saved-cases").replaceChildren(new Option("Selecciona una práctica", ""));
+  for (const row of rows) $("saved-cases").add(new Option(`${row.title} · revisión ${row.revision}`, row.id));
+  if (savedCase) $("saved-cases").value = savedCase.id;
+  return rows;
+}
+$("refresh-cases").addEventListener("click", async () => {
+  if (busy) return; setBusy(true);
+  try { const rows = await refreshCases(); $("storage-status").textContent = `${rows.length} prácticas disponibles (se muestran las 100 más recientes).`; }
+  catch (error) { $("storage-status").textContent = error.message; }
   finally { setBusy(false); }
 });
+$("save-case").addEventListener("click", async () => {
+  if (!activeCase || busy) return; setBusy(true);
+  try {
+    const payload = {case: activeCase, messages: history.slice(-60), proposal_requested: proposalSnapshot !== null, diagnosis_requested: diagnosisSnapshot !== null, revision: savedCase?.revision || null};
+    const response = await storageRequest(savedCase ? `/casos/${savedCase.id}` : "/casos", {method: savedCase ? "PUT" : "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
+    savedCase = await response.json();
+    $("storage-status").textContent = `Práctica guardada · revisión ${savedCase.revision}. Puedes reabrirla después de recargar. Solo se guardan los datos aplicados al caso.`;
+    try { await refreshCases(); } catch { $("storage-status").textContent += " No se pudo actualizar la lista."; }
+  } catch (error) { $("storage-status").textContent = error.message; }
+  finally { setBusy(false); }
+});
+$("load-case").addEventListener("click", async () => {
+  const id = $("saved-cases").value;
+  if (!id || busy) return;
+  if (activeCase && !confirm("Abrir otra práctica reemplaza el trabajo de esta pestaña que no hayas guardado. ¿Continuar?")) return;
+  setBusy(true);
+  try {
+    const loaded = await (await storageRequest(`/casos/${id}`)).json();
+    const doc = loaded.document;
+    savedCase = loaded; activeCase = doc.case; history = doc.messages;
+    proposalSnapshot = doc.proposal; diagnosisSnapshot = doc.diagnosis;
+    const fields = {"case-title": activeCase.title, "device-model": activeCase.model, "ios-version": activeCase.version, "connections": activeCase.connections, "admin-vlan": activeCase.groups[0].vlan, "admin-ports": activeCase.groups[0].ports, "lab-vlan": activeCase.groups[1].vlan, "lab-ports": activeCase.groups[1].ports};
+    for (const [id, value] of Object.entries(fields)) $(id).value = value;
+    $("review-command").value = activeCase.review_command; $("evidence-input").value = activeCase.evidence;
+    $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = ""; $("diagnosis-output").replaceChildren();
+    renderCase(); renderEvidence(); welcome();
+    for (const message of history) appendMessage(message.role, message.content, false);
+    if (proposalSnapshot) renderProposal(proposalSnapshot);
+    if (diagnosisSnapshot) renderDiagnosis(diagnosisSnapshot);
+    else $("evidence-status").textContent = "Capturas recuperadas; puedes analizarlas.";
+    activateTab(tabs[0]);
+    $("storage-status").textContent = `Práctica recuperada · revisión ${savedCase.revision}. Los resultados corresponden a esa revisión guardada.`;
+  } catch (error) { $("storage-status").textContent = error.message; }
+  finally { setBusy(false); }
+});
+$("new-case").addEventListener("click", () => {
+  if (busy || (activeCase && !confirm("Iniciar otra práctica descarta los cambios de esta pestaña que no hayas guardado. ¿Continuar?"))) return;
+  activeCase = null; savedCase = null; history = []; proposalSnapshot = null; diagnosisSnapshot = null;
+  $("case-form").reset(); $("case-content").hidden = true; $("empty-case").hidden = false;
+  $("case-heading").textContent = "Un espacio para construir"; $("case-status").textContent = "Sin práctica abierta";
+  $("open-case-button").textContent = "Abrir práctica ↗";
+  $("chat-context").textContent = "Sin práctica abierta"; $("launcher-context").textContent = "Listo para acompañarte";
+  for (const id of ["proposal-checks", "diagnosis-output", "evidence-records"]) $(id).replaceChildren();
+  for (const id of ["review-command", "evidence-input"]) { $(id).value = ""; $(id).disabled = true; }
+  $("save-evidence-button").disabled = true; $("evidence-status").textContent = "No hay evidencia aportada.";
+  $("storage-status").textContent = "Nueva práctica. Completa el formulario para abrirla.";
+  welcome(); setBusy(false); $("diagnose-button").disabled = true; activateTab(tabs[0]);
+});
+for (const format of ["html", "json"]) $(`export-${format}`).addEventListener("click", async () => {
+  if (!savedCase || busy) return; setBusy(true);
+  try {
+    const response = await storageRequest(`/casos/${savedCase.id}/informe?formato=${format}&revision=${savedCase.revision}`);
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a"); link.href = url; link.download = `netassist-${savedCase.id}.${format}`; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $("storage-status").textContent = `Informe de la revisión guardada ${savedCase.revision} descargado. Guarda primero si quieres incluir cambios posteriores.`;
+  } catch (error) { $("storage-status").textContent = error.message; }
+  finally { setBusy(false); }
+});
+refreshCases().then(rows => { $("storage-status").textContent = `${rows.length} prácticas guardadas. Guarda explícitamente los cambios que quieras conservar.`; }).catch(error => { $("storage-status").textContent = error.message; });

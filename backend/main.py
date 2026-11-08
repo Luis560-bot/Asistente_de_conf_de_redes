@@ -4,13 +4,16 @@ import logging
 import json
 from contextlib import asynccontextmanager
 from typing import Literal
+from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from .config import FRONTEND_ORIGIN, SUPPORT_CONTACT
+from .config import FRONTEND_ORIGIN, SUPPORT_CONTACT, ROOT_DIR
+from .cases import CaseStore, html_report
 from .llm import MENSAJE_FALLBACK, llamar_llm
 from .generator import generate
 from .diagnostics import diagnose
@@ -19,6 +22,7 @@ from .rag import RagService, formatear_contexto
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 rag_service = RagService()
+case_store = CaseStore(ROOT_DIR)
 
 
 @asynccontextmanager
@@ -39,7 +43,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_ORIGIN],
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type"],
 )
 
@@ -88,6 +92,66 @@ class RespuestaChat(BaseModel):
 
     reply: str
     contact: str
+
+
+class GuardarCaso(BaseModel):
+    case: ContextoPractica
+    messages: list[Mensaje] = Field(default_factory=list, max_length=60)
+    proposal_requested: bool = False
+    diagnosis_requested: bool = False
+    revision: int | None = Field(default=None, ge=1)
+
+
+def stored_document(data: GuardarCaso):
+    return {"schema_version": 1, "case": data.case.model_dump(),
+            "messages": [m.model_dump() for m in data.messages],
+            "proposal": generate(data.case) if data.proposal_requested else None,
+            "diagnosis": diagnose(data.case) if data.diagnosis_requested else None}
+
+
+def case_operation(operation, *args):
+    try:
+        return operation(*args)
+    except KeyError as error:
+        raise HTTPException(404, "Práctica no encontrada.") from error
+    except ValueError as error:
+        raise HTTPException(409, str(error)) from error
+    except Exception as error:
+        logger.exception("Almacenamiento de casos no disponible.")
+        raise HTTPException(503, "No se pudo acceder al almacenamiento exclusivo de NetAssist.") from error
+
+
+@app.get("/casos")
+def listar_casos():
+    return case_operation(case_store.list)
+
+
+@app.post("/casos", status_code=201)
+def crear_caso(data: GuardarCaso):
+    return case_operation(case_store.save, stored_document(data))
+
+
+@app.get("/casos/{case_id}")
+def leer_caso(case_id: UUID):
+    return case_operation(case_store.get, str(case_id))
+
+
+@app.put("/casos/{case_id}")
+def actualizar_caso(case_id: UUID, data: GuardarCaso):
+    if data.revision is None:
+        raise HTTPException(422, "Falta la revisión del caso abierto.")
+    return case_operation(case_store.save, stored_document(data), str(case_id), data.revision)
+
+
+@app.get("/casos/{case_id}/informe")
+def informe_caso(case_id: UUID, formato: Literal["html", "json"] = "html", revision: int | None = None):
+    saved = case_operation(case_store.get, str(case_id))
+    if revision is not None and revision != saved["revision"]:
+        raise HTTPException(409, "La revisión guardada cambió. Reabre la práctica antes de exportar.")
+    content = html_report(saved) if formato == "html" else json.dumps(saved, ensure_ascii=False, indent=2)
+    return Response(content, media_type="text/html" if formato == "html" else "application/json",
+                    headers={"Content-Disposition": f'attachment; filename="netassist-{case_id}.{formato}"',
+                             "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'"})
 
 
 @app.post("/generar")
