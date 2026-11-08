@@ -244,3 +244,13 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
 - No se implementó el generador estructurado, el diagnóstico automático ni la
   persistencia en base de datos. No se realizaron pruebas de configuración en
   Packet Tracer. El mockup original sigue siendo una referencia independiente.
+
+## Credenciales en GitHub Secrets (8 de noviembre de 2026)
+
+- Se crearon y confirmaron los secretos de repositorio `GEMINI_API_KEY` y
+  `GROQ_API_KEY` en GitHub Actions, a petición del usuario. No se publicaron
+  los valores ni el archivo `.env` en el historial del repositorio.
+- El intento anterior de publicar `.env` fue rechazado por GitHub. Ese commit
+  local se excluyó antes de publicar la fase 5. `.env` sigue local e ignorado.
+- Los secretos de Actions no configuran por sí solos la aplicación local ni
+  ejecutan pruebas: requieren un flujo que los consuma explícitamente.
