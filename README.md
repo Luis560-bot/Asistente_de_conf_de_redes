@@ -119,7 +119,7 @@ El backend acepta `.txt` y `.pdf`, divide el texto en fragmentos de 500 palabras
 1. **Flujo ideal MikroTik:** pregunta por el estado de una interfaz y proporciona modelo/versión; la respuesta debe citar el manual y sugerir verificación con sintaxis RouterOS.
 2. **Flujo ideal Cisco:** reporta conectividad fallida; la guía debe respetar el orden de capa física, IP y enrutamiento, usando los comandos de verificación del manual IOS.
 3. **Memoria de la conversación:** ejecuta una verificación, envía su resultado y pregunta por el siguiente paso; el asistente no debe volver a proponer como pendiente el comando ya probado.
-4. **Faltan datos del equipo:** pregunta por un cambio de configuración sin marca, modelo ni versión; NetAssist debe preguntar esos datos antes de proponer el cambio.
+4. **Faltan datos del equipo:** pregunta por un cambio de configuración sin marca ni modelo; NetAssist debe preguntar esos datos antes de proponer el cambio. La versión solo se pide cuando afecta a la sintaxis del escenario.
 5. **Advertencia de riesgo:** consulta cómo reiniciar o cambiar acceso remoto; la respuesta debe advertir el riesgo antes del comando y recomendar respaldo.
 6. **Derivación humana:** reporta una falla física o un caso que persiste tras varios intentos; la respuesta debe recomendar contacto y mostrar la información configurada.
 7. **Failover con API primaria caída:** simula error o timeout de Gemini; la solicitud debe intentar Groq y responder sin revelar claves.
@@ -128,7 +128,7 @@ El backend acepta `.txt` y `.pdf`, divide el texto en fragmentos de 500 palabras
 ## Demostración (fase 6)
 
 La sección **Demostración guiada** carga seis escenarios sintéticos: correcto,
-puerto incorrecto, versión pendiente, conflicto de puertos, salida paginada y
+puerto incorrecto, modelo pendiente, conflicto de puertos, salida paginada y
 corrección posterior. Usa los botones habituales para generar y analizar.
 El guion, las mediciones y sus límites están en [docs/FASE_6.md](docs/FASE_6.md).
 
@@ -170,11 +170,11 @@ y su evidencia corresponden a la fase 3.
 ## Interfaz de laboratorio (fase 2)
 
 Abre el frontend y completa el nombre de la práctica. Puedes registrar modelo,
-versión de IOS, VLAN y puertos después; el panel mostrará lo que falta. Pulsa
+VLAN y puertos después; el panel mostrará lo que falta. Pulsa
 **Abrir práctica** para trabajar sin escribir primero al chat. **Completar con un
 ejemplo** precarga un escenario ilustrativo que debes revisar.
 
-- **Configuración:** resumen de requisitos y datos pendientes. Pulsa **Generar configuración** para obtener comandos, explicaciones, reglas comprobadas y límites. El modelo y la versión son obligatorios; su compatibilidad requiere revisión manual.
+- **Configuración:** resumen de requisitos y datos pendientes. Pulsa **Generar configuración** para obtener comandos, explicaciones, reglas comprobadas y límites. El modelo es obligatorio; no se solicita versión de IOS. La compatibilidad requiere revisión manual.
 - **Comprobaciones:** incorpora una captura por comando y pulsa **Analizar evidencia**.
   Se contrastan `show vlan brief` y `show interfaces <puerto> switchport`; los
   hallazgos citan el fragmento y la captura. Conserva hasta 12 registros en la
@@ -200,3 +200,21 @@ Los registros permanecen en memoria hasta pulsar Guardar práctica; entonces se 
 En este equipo usa el puerto **5501** para el frontend y configura
 `FRONTEND_ORIGIN=http://localhost:5501`; el puerto 5500 pertenece a otro servicio.
 Para el puerto local configurado se admiten tanto `localhost` como `127.0.0.1`.
+
+## Topología visual en el chat
+
+Abre una práctica o carga un escenario de demostración y pide a Nexo
+**«Muéstrame una imagen de la topología de mi práctica»**. También puedes
+pulsar **Ver mi topología** en su bienvenida. La imagen muestra un switch,
+una PC por puerto de acceso y los dos grupos VLAN del caso abierto.
+
+Puedes ampliar y descargar la imagen SVG. Se conserva en la conversación
+al guardar la práctica y se incluye en el informe HTML. El dibujo se genera
+por código a partir de los datos del caso, sin un proveedor de imágenes ni
+credenciales adicionales. Las consultas habituales siguen usando la IA del chat.
+
+Alcance: un switch Cisco IOS, dos VLAN y hasta 32 PC conectadas directamente.
+Solicita VLAN y puertos faltantes y rechaza asignaciones en conflicto; modelo e
+IOS no son obligatorios para dibujar. No interpreta libremente inventarios desde
+texto ni asigna direcciones IP. Es una propuesta visual: no crea un archivo `.pkt`,
+no controla Packet Tracer y no demuestra conectividad.

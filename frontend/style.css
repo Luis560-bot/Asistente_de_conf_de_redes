@@ -1418,3 +1418,16 @@ dialog::backdrop {
   .side-navigation { display: flex; order: 3; flex-basis: 100%; }
   .side-navigation .nav-link { flex: 1; }
 }
+
+.topology-figure { margin: 14px 0 0; min-width: 0; }
+.topology-preview { display: block; width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 0; overflow: hidden; cursor: zoom-in; }
+.topology-preview img { display: block; width: 100%; height: auto; }
+.topology-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.topology-actions .button { font-size: 11px; text-decoration: none; }
+.topology-figure figcaption { font-size: 10px; line-height: 1.6; color: var(--muted); }
+#topology-dialog { width: min(1200px, 95vw); max-width: 95vw; max-height: 90dvh; padding: 22px; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); }
+.topology-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topology-dialog-heading h2 { margin: 0; font-size: 18px; }
+.topology-canvas { overflow: auto; margin-top: 16px; }
+.topology-canvas img { display: block; width: 100%; min-width: 720px; height: auto; }
+#topology-dialog p { font-size: 12px; color: var(--muted); }

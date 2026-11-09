@@ -9,6 +9,7 @@ let demoScenarios = [];
 let history = [];
 let supportContact = "Contacta al docente o técnico responsable del laboratorio.";
 let busy = false;
+let topologyUrls = [];
 const messagesElement = $("messages");
 const inputElement = $("message-input");
 const chatPanel = $("chat-panel");
@@ -75,7 +76,7 @@ function renderMarkdown(text) {
 }
 
 
-function appendMessage(role, content, persist = true) {
+function appendMessage(role, content, persist = true, topology = null, svg = null) {
   const article = document.createElement("article");
   article.className = `message message-${role}`;
   const bubble = document.createElement("div");
@@ -87,14 +88,60 @@ function appendMessage(role, content, persist = true) {
   meta.textContent = role === "assistant" ? "Nexo · NetAssist" : "Tú";
   article.append(bubble, meta);
   messagesElement.append(article);
+  if (role === "assistant" && topology) appendTopology(bubble, topology, svg);
   messagesElement.scrollTop = messagesElement.scrollHeight;
-  if (persist) history.push({role, content});
+  if (persist) history.push(topology ? {role, content, topology} : {role, content});
 }
+async function appendTopology(bubble, topology, svg) {
+  const figure = document.createElement("figure"); figure.className = "topology-figure";
+  const status = document.createElement("figcaption"); status.textContent = "Preparando imagen…";
+  figure.append(status); bubble.append(figure);
+  try {
+    if (!svg) {
+      const response = await fetch(`${API_BASE}/topologia/imagen`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(topology), signal: AbortSignal.timeout(15000)
+      });
+      if (!response.ok) throw new Error("Imagen no disponible");
+      svg = await response.text();
+    }
+    if (!figure.isConnected) return;
+    const url = URL.createObjectURL(new Blob([svg], {type: "image/svg+xml"})); topologyUrls.push(url);
+    const image = document.createElement("img"); image.src = url;
+    image.alt = `Topología propuesta de ${topology.title}: un switch y dos grupos VLAN`;
+    const enlarge = document.createElement("button"); enlarge.type = "button";
+    enlarge.className = "topology-preview"; enlarge.setAttribute("aria-label", "Ampliar topología");
+    enlarge.append(image);
+    enlarge.addEventListener("click", () => {
+      $("topology-image").src = url; $("topology-image").alt = image.alt;
+      const count = topology.groups.reduce((total, group) => total + group.ports.length, 0);
+      $("topology-image").style.minWidth = `${Math.max(720, count * 140)}px`;
+      $("topology-download").href = url; $("topology-dialog").showModal();
+    });
+    const actions = document.createElement("div"); actions.className = "topology-actions";
+    const view = document.createElement("button"); view.type = "button"; view.textContent = "Ampliar";
+    view.className = "button secondary"; view.addEventListener("click", () => enlarge.click());
+    const download = document.createElement("a"); download.href = url; download.download = "topologia-netassist.svg";
+    download.className = "button secondary"; download.textContent = "Descargar imagen";
+    actions.append(view, download);
+    status.textContent = "Esquema propuesto · Pendiente de comprobar en Packet Tracer";
+    figure.replaceChildren(enlarge, actions, status);
+    messagesElement.scrollTop = messagesElement.scrollHeight;
+  } catch {
+    status.textContent = "No se pudo cargar la imagen. ";
+    const retry = document.createElement("button"); retry.type = "button"; retry.textContent = "Reintentar";
+    retry.addEventListener("click", () => { figure.remove(); appendTopology(bubble, topology); }); status.append(retry);
+  }
+}
+$("close-topology").addEventListener("click", () => $("topology-dialog").close());
 function welcome() {
+  $("topology-dialog").close(); $("topology-image").removeAttribute("src");
+  $("topology-download").removeAttribute("href");
+  topologyUrls.forEach(url => URL.revokeObjectURL(url)); topologyUrls = [];
   messagesElement.replaceChildren();
   const welcomeCard = document.createElement("article");
   welcomeCard.className = "nexo-welcome";
-  welcomeCard.innerHTML = `<div class="nexo-welcome-art"><span class="nexo-orbit" aria-hidden="true"></span><img src="nexo.svg" alt="Nexo, un pequeño robot de redes que saluda" width="138" height="138"><span class="nexo-hello">¡Hola, colega!</span></div><p class="nexo-eyebrow">TU COMPAÑERO DE REDES</p><h3>¡Soy Nexo!</h3><p class="nexo-intro"></p><div class="nexo-prompts"><button type="button" data-nexo-prompt="¿Por dónde empiezo con esta práctica?">¿Por dónde empiezo? <span aria-hidden="true">↗</span></button><button type="button" data-nexo-prompt="Explícame por qué se usa modo access en los puertos de esta práctica.">Entender modo access <span aria-hidden="true">↗</span></button></div><p class="nexo-footnote">Tú haces la práctica. Yo te ayudo a entender cada paso.</p>`;
+  welcomeCard.innerHTML = `<div class="nexo-welcome-art"><span class="nexo-orbit" aria-hidden="true"></span><img src="nexo.svg" alt="Nexo, un pequeño robot de redes que saluda" width="138" height="138"><span class="nexo-hello">¡Hola, colega!</span></div><p class="nexo-eyebrow">TU COMPAÑERO DE REDES</p><h3>¡Soy Nexo!</h3><p class="nexo-intro"></p><div class="nexo-prompts"><button type="button" data-nexo-prompt="¿Por dónde empiezo con esta práctica?">¿Por dónde empiezo? <span aria-hidden="true">↗</span></button><button type="button" data-nexo-prompt="Explícame por qué se usa modo access en los puertos de esta práctica.">Entender modo access <span aria-hidden="true">↗</span></button><button type="button" data-nexo-prompt="Muéstrame una imagen de la topología de mi práctica para Packet Tracer.">Ver mi topología <span aria-hidden="true">↗</span></button></div><p class="nexo-footnote">Tú haces la práctica. Yo te ayudo a entender cada paso.</p>`;
   welcomeCard.querySelector(".nexo-intro").textContent = activeCase
     ? `Ya tengo el contexto de «${activeCase.title}». Vamos paso a paso: podemos revisar tus VLAN, entender un comando o conversar sobre una salida.`
     : "Estoy aquí para ayudarte a entender tu red, un cable a la vez. Abre una práctica o cuéntame qué te gustaría aprender.";
@@ -151,7 +198,7 @@ function readCase() {
   const data = new FormData($("case-form"));
   const value = (key) => String(data.get(key) || "").trim();
   return {
-    title: value("title"), model: value("model"), version: value("version"),
+    title: value("title"), model: value("model"), version: activeCase?.version || "",
     connections: value("connections"), vendor: "Cisco IOS",
     groups: [
       {name: "Administración", vlan: value("adminVlan"), ports: value("adminPorts")},
@@ -167,7 +214,6 @@ function renderCase() {
   $("open-case-button").textContent = "Actualizar práctica ↗";
   const missing = [];
   if (!activeCase.model) missing.push("modelo del switch");
-  if (!activeCase.version) missing.push("versión de IOS");
   for (const group of activeCase.groups) {
     if (!group.vlan) missing.push(`VLAN de ${group.name}`);
     if (!group.ports) missing.push(`puertos de ${group.name}`);
@@ -176,7 +222,7 @@ function renderCase() {
   $("case-status").classList.add("open");
   const safe = escapeHtml;
   $("case-summary").className = "summary";
-  $("case-summary").innerHTML = `<h3>Requisitos de la práctica</h3><dl><dt>Equipo</dt><dd>Cisco IOS · ${safe(activeCase.model || "Modelo pendiente")}</dd><dt>Versión</dt><dd>${safe(activeCase.version || "Pendiente de identificar")}</dd><dt>Conexiones</dt><dd>${safe(activeCase.connections || "Sin especificar")}</dd></dl><div class="group-summary">${activeCase.groups.map(g => `<div><h3>${safe(g.name)}</h3><p>VLAN ${safe(g.vlan || "pendiente")}</p><p>${safe(g.ports || "Puertos pendientes")}</p></div>`).join("")}</div>${missing.length ? `<p class="missing-list">Por completar: ${missing.map(safe).join(", ")}. Puedes registrar estos datos y consultar al asistente.</p>` : ""}`;
+  $("case-summary").innerHTML = `<h3>Requisitos de la práctica</h3><dl><dt>Equipo</dt><dd>Cisco IOS · ${safe(activeCase.model || "Modelo pendiente")}</dd><dt>Conexiones</dt><dd>${safe(activeCase.connections || "Sin especificar")}</dd></dl><div class="group-summary">${activeCase.groups.map(g => `<div><h3>${safe(g.name)}</h3><p>VLAN ${safe(g.vlan || "pendiente")}</p><p>${safe(g.ports || "Puertos pendientes")}</p></div>`).join("")}</div>${missing.length ? `<p class="missing-list">Por completar: ${missing.map(safe).join(", ")}. Puedes registrar estos datos y consultar al asistente.</p>` : ""}`;
   for (const id of ["review-command", "evidence-input", "save-evidence-button", "diagnose-button"]) $(id).disabled = false;
   $("evidence-input").placeholder = "Pega aquí la salida que obtuviste en Packet Tracer…";
 }
@@ -200,12 +246,12 @@ function applyForm(focus = true) {
 }
 function requirementsChanged() {
   const form = readCase();
-  return !activeCase || ["title", "model", "version", "connections", "vendor", "groups"].some(key => JSON.stringify(form[key]) !== JSON.stringify(activeCase[key]));
+  return !activeCase || ["title", "model", "connections", "vendor", "groups"].some(key => JSON.stringify(form[key]) !== JSON.stringify(activeCase[key]));
 }
 $("case-form").addEventListener("submit", event => { event.preventDefault(); applyForm(); });
 $("case-form").addEventListener("input", () => { $("storage-status").textContent = "Cambios sin guardar"; });
 $("example-button").addEventListener("click", () => {
-  const example = {"case-title":"Separar Administración y Laboratorio", "device-model":"Catalyst 2960", "ios-version":"", "admin-vlan":"10", "admin-ports":"Fa0/1, Fa0/2", "lab-vlan":"20", "lab-ports":"Fa0/3, Fa0/4", "connections":"Un switch con cuatro PC, dos por grupo. Confirmar el modelo y la versión en Packet Tracer."};
+  const example = {"case-title":"Separar Administración y Laboratorio", "device-model":"Catalyst 2960", "admin-vlan":"10", "admin-ports":"Fa0/1, Fa0/2", "lab-vlan":"20", "lab-ports":"Fa0/3, Fa0/4", "connections":"Un switch con cuatro PC, dos por grupo. Confirmar el modelo en Packet Tracer."};
   for (const [id, value] of Object.entries(example)) $(id).value = value;
   $("case-title").focus();
 });
@@ -255,7 +301,7 @@ $("chat-form").addEventListener("submit", async (event) => {
     const data = await response.json();
     if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Respuesta no disponible");
     if (typeof data.contact === "string" && data.contact.trim()) supportContact = data.contact;
-    appendMessage("assistant", data.reply);
+    appendMessage("assistant", data.reply, true, data.topology, data.topology_svg);
   } catch {
     appendMessage("assistant", `No pude obtener una respuesta. Puedes volver a intentarlo; tu práctica sigue abierta. Contacto: ${supportContact}`, false);
   } finally {
@@ -410,12 +456,12 @@ $("saved-cases").addEventListener("click", async event => {
     const doc = loaded.document;
     savedCase = loaded; activeCase = doc.case; history = doc.messages;
     proposalSnapshot = doc.proposal; diagnosisSnapshot = doc.diagnosis;
-    const fields = {"case-title": activeCase.title, "device-model": activeCase.model, "ios-version": activeCase.version, "connections": activeCase.connections, "admin-vlan": activeCase.groups[0].vlan, "admin-ports": activeCase.groups[0].ports, "lab-vlan": activeCase.groups[1].vlan, "lab-ports": activeCase.groups[1].ports};
+    const fields = {"case-title": activeCase.title, "device-model": activeCase.model, "connections": activeCase.connections, "admin-vlan": activeCase.groups[0].vlan, "admin-ports": activeCase.groups[0].ports, "lab-vlan": activeCase.groups[1].vlan, "lab-ports": activeCase.groups[1].ports};
     for (const [id, value] of Object.entries(fields)) $(id).value = value;
     $("review-command").value = activeCase.review_command; $("evidence-input").value = activeCase.evidence;
     $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = ""; $("diagnosis-output").replaceChildren();
     renderCase(); renderEvidence(); welcome();
-    for (const message of history) appendMessage(message.role, message.content, false);
+    for (const message of history) appendMessage(message.role, message.content, false, message.topology);
     if (proposalSnapshot) renderProposal(proposalSnapshot);
     if (diagnosisSnapshot) renderDiagnosis(diagnosisSnapshot);
     else $("evidence-status").textContent = "Capturas recuperadas; puedes analizarlas.";
@@ -494,9 +540,9 @@ $("load-demo").addEventListener("click", () => {
   if (!scenario) return;
   if (activeCase && !confirm("Cargar el ejemplo reemplaza el caso de esta pestaña. Guarda tus cambios antes de continuar. ¿Continuar?")) return;
   const data = scenario.case;
-  const values = {"case-title":data.title, "device-model":data.model, "ios-version":data.version, "connections":data.connections, "admin-vlan":data.groups[0].vlan, "admin-ports":data.groups[0].ports, "lab-vlan":data.groups[1].vlan, "lab-ports":data.groups[1].ports};
+  const values = {"case-title":data.title, "device-model":data.model, "connections":data.connections, "admin-vlan":data.groups[0].vlan, "admin-ports":data.groups[0].ports, "lab-vlan":data.groups[1].vlan, "lab-ports":data.groups[1].ports};
   for (const [id, value] of Object.entries(values)) $(id).value = value;
-  savedCase = null;
+  savedCase = null; activeCase = null;
   $("case-form").requestSubmit();
   activeCase.evidence_records = structuredClone(data.evidence_records);
   const last = activeCase.evidence_records.at(-1);

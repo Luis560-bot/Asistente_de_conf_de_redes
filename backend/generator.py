@@ -24,7 +24,7 @@ def parse_ports(value):
 
 def generate(case):
     missing, errors, groups = [], [], []
-    for field, label in [("model", "modelo del switch (show version)"), ("version", "versión de IOS (show version)")]:
+    for field, label in [("model", "modelo del switch")]:
         if not getattr(case, field).strip():
             missing.append(label)
     used = set()
@@ -58,7 +58,7 @@ def generate(case):
     if missing or errors:
         return result
     lines = ["enable", "configure terminal"]
-    checks = [{"command": "show version", "expected": "Confirmar el modelo y la versión registrados antes de aplicar cambios."},
+    checks = [{"command": "show version", "expected": "Confirmar el modelo del switch antes de aplicar cambios."},
               {"command": "show vlan brief", "expected": "Ambas VLAN activas, con los puertos de cada grupo."}]
     for group in groups:
         lines += [f"vlan {group['vlan']}", f"name {group['cli_name']}", "exit"]
@@ -70,7 +70,7 @@ def generate(case):
                   validations=["Campos obligatorios completos", "VLAN entre 2 y 1001 y distintas", "Sintaxis de puertos válida, sin duplicados ni conflictos"],
                   explanation="Se crean dos VLAN y se asigna cada interfaz en modo access. Los nombres CLI son ADMINISTRACION y LABORATORIO. no shutdown habilita los puertos seleccionados. No se configura enrutamiento entre grupos.",
                   limitations=["Referencia para un switch Cisco IOS y PC conectadas directamente. Confirma que las interfaces existen y que no son enlaces troncales o de administración.",
-                               "El modelo y la versión se registran, pero su compatibilidad no se valida automáticamente. Revisa la guía y la CLI de Packet Tracer.",
+                               "La compatibilidad del equipo no se valida automáticamente. Revisa la guía y la CLI de Packet Tracer.",
                                "Usa un laboratorio aislado con VLAN y puertos disponibles; no se inspecciona la configuración previa ni VTP.",
                                "Las comprobaciones de código no prueban conectividad. Configura las IP de los PC y registra las pruebas indicadas."],
                   save_command="copy running-config startup-config")

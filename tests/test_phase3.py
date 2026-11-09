@@ -24,10 +24,18 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(len(result["checks"]), 5)
 
     def test_missing_data_blocks_commands(self):
-        result = generate(case(version=" "))
+        result = generate(case(model=" "))
         self.assertEqual(result["status"], "incomplete")
         self.assertTrue(result["missing"])
         self.assertEqual(result["commands"], "")
+
+    def test_ios_version_is_not_required(self):
+        result = generate(case(version=""))
+        self.assertEqual(result["status"], "proposed")
+        self.assertTrue(result["commands"])
+        legacy = case()
+        del legacy.version
+        self.assertEqual(generate(legacy)["status"], "proposed")
 
     def test_vlan_bounds_and_conflicts(self):
         for vlan in ["1", "1002", "4094", "-1", "1e1", "10\nexit"]:

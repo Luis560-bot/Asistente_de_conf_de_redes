@@ -101,7 +101,7 @@ def html_report(saved):
         return escape(str(value))
 
     case = doc["case"]
-    sections = [f"<h2>Requisitos</h2><p>Cisco IOS · {safe(case['model'])} · {safe(case['version'])}</p><p>{safe(case['connections'])}</p>",
+    sections = [f"<h2>Requisitos</h2><p>Cisco IOS · {safe(case['model'])}</p><p>{safe(case['connections'])}</p>",
                 "<table><tr><th>Grupo</th><th>VLAN</th><th>Puertos</th></tr>" + "".join(
                     f"<tr><td>{safe(g['name'])}</td><td>{safe(g['vlan'])}</td><td>{safe(g['ports'])}</td></tr>" for g in case["groups"]) + "</table>"]
     proposal = doc["proposal"]
@@ -131,9 +131,14 @@ def html_report(saved):
             sections.append(f"<h3>{safe(finding['label'])} · {safe(finding['status'])}</h3><p>Observado: {safe(finding['actual'])}. Esperado: {safe(finding['expected'])}. Captura {finding['record']}.</p><pre>{safe(finding['evidence'])}</pre><p>{safe(finding['next_step'])}</p>")
         sections.append("<h3>Pasos registrados</h3><ul>" + "".join(f"<li>Captura {s['record']} · {safe(s['command'])}: {safe(s['note'])}</li>" for s in diagnosis["steps"]) + "</ul>")
         sections.append("<h3>Próximas comprobaciones</h3><ul>" + "".join(f"<li>{safe(s['command'])}: {safe(s['reason'])}</li>" for s in diagnosis["next_steps"]) + "</ul>")
-    sections.append("<h2>Conversación registrada</h2>" + "".join(f"<p><strong>{safe(m['role'])}</strong></p><pre>{safe(m['content'])}</pre>" for m in doc["messages"]))
+    sections.append("<h2>Conversación registrada</h2>")
+    for message in doc["messages"]:
+        sections.append(f"<p><strong>{safe(message['role'])}</strong></p><pre>{safe(message['content'])}</pre>")
+        if message.get("topology"):
+            from .topology import Topology, render_svg
+            sections.append(render_svg(Topology.model_validate(message["topology"])))
     return ("<!doctype html><html lang='es'><meta charset='utf-8'>"
-            f"<title>NetAssist · {title}</title><style>body{{font:16px system-ui;max-width:960px;margin:40px auto;padding:0 20px;color:#162c36}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f5f7;padding:16px}}h2{{margin-top:32px}}</style>"
+            f"<title>NetAssist · {title}</title><style>body{{font:16px system-ui;max-width:960px;margin:40px auto;padding:0 20px;color:#162c36}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f5f7;padding:16px}}h2{{margin-top:32px}}svg{{max-width:100%;height:auto}}</style>"
             f"<h1>{title}</h1><p>NetAssist · revisión {saved['revision']} · {escape(saved['updated_at'])}</p>"
             "<p><strong>Una propuesta y un contraste de capturas no prueban el funcionamiento de la red.</strong> "
             "No se han ejecutado comandos desde NetAssist. Las salidas fueron aportadas por el usuario; la aceptación real en laboratorio no se da por supuesta.</p>"

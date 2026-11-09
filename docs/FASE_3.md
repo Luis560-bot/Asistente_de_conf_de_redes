@@ -5,7 +5,7 @@ switch Cisco IOS y dos grupos; botón «Generar configuración» en la práctica
 No necesita proveedores de IA ni RAG. La IA del chat explica la propuesta y
 acompaña el caso; no decide las reglas exactas ni ejecuta la configuración.
 
-Solicita modelo, versión, VLAN y puertos faltantes. Bloquea VLAN fuera de
+Solicita modelo, VLAN y puertos faltantes. La versión de IOS no es obligatoria. Bloquea VLAN fuera de
 2–1001 (límite deliberado del escenario), VLAN iguales, sintaxis de puertos
 inválida y puertos duplicados, incluso entre abreviaturas y nombres completos.
 Admite listas separadas por comas de Fa/FastEthernet y Gi/GigabitEthernet;
@@ -26,7 +26,7 @@ La fuente describe IOS real; su uso no demuestra compatibilidad con el simulador
 
 1. En Packet Tracer crea un laboratorio nuevo con un 2960 y cuatro PC.
    Conecta PC-A1 y PC-A2 a Fa0/1 y Fa0/2; PC-L1 y PC-L2 a Fa0/3 y Fa0/4.
-2. Obtén `show version`. Registra el modelo y la versión reales en el formulario,
+2. Obtén `show version`. Registra el modelo en el formulario,
    VLAN 10 y 20 y los puertos anteriores. Genera y revisa los comandos.
 3. En el switch confirma que los puertos existen y están disponibles. Aplica la
    propuesta en la CLI. Registra cualquier comando rechazado y su mensaje.

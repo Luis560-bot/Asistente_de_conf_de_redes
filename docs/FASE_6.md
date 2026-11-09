@@ -17,7 +17,7 @@ en `frontend/demo-cases.json`; todos están identificados como sintéticos.
 | --- | --- | --- |
 | VLAN y acceso correctos | Generar; ir a Comprobaciones y analizar | Comandos para dos VLAN; 18 campos/fila contrastados sin discrepancias. No se declara conectividad verificada. |
 | Modo trunk y VLAN equivocada | Analizar evidencia | Fa0/1 muestra dos discrepancias y cita los campos Administrative Mode y Access Mode VLAN. |
-| Falta la versión de IOS | Generar | Solicita versión; no entrega comandos de configuración. |
+| Falta el modelo del switch | Generar | Solicita modelo; no entrega comandos de configuración. |
 | Puerto asignado a dos grupos | Generar | Bloquea el conflicto entre Fa0/1 y FastEthernet0/1. |
 | Salida incompleta o paginada | Analizar evidencia | Evidencia insuficiente, sin hallazgos inventados; show vlan brief sigue pendiente. |
 | Corrección con captura posterior | Analizar y desplegar las capturas | Se conserva la captura antigua y se contrasta la más reciente; desaparecen las discrepancias corregidas. |

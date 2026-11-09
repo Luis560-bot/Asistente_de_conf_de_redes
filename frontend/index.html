@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101e2c"><title>NetAssist | Laboratorio de redes</title>
-  <link rel="stylesheet" href="style.css?v=menu-practicas"><script src="app.js?v=chat-enter" defer></script>
+  <link rel="stylesheet" href="style.css?v=topologia"><script src="app.js?v=sin-ios" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -28,8 +28,7 @@
           <form id="case-form">
             <label for="case-title">Nombre de la práctica</label><input id="case-title" name="title" maxlength="100" required placeholder="Separar Administración y Laboratorio">
             <div class="form-section"><span>EL EQUIPO</span><span>Cisco IOS</span></div>
-            <div class="field-row"><div><label for="device-model">Modelo del switch</label><input id="device-model" name="model" maxlength="80" placeholder="Ej. Catalyst 2960"></div><div><label for="ios-version">Versión de IOS</label><input id="ios-version" name="version" maxlength="80" placeholder="Ej. 15.0(2)SE"></div></div>
-            <p class="field-hint">Puedes completar modelo y versión después con <code>show version</code>.</p>
+            <label for="device-model">Modelo del switch</label><input id="device-model" name="model" maxlength="80" placeholder="Ej. Catalyst 2960">
             <fieldset><legend><span class="group-dot admin-dot"></span> Administración</legend><div class="field-row vlan-row"><div><label for="admin-vlan">ID de VLAN</label><input id="admin-vlan" name="adminVlan" type="number" min="2" max="1001" placeholder="10"></div><div><label for="admin-ports">Puertos de acceso</label><input id="admin-ports" name="adminPorts" maxlength="200" placeholder="Fa0/1, Fa0/2"></div></div></fieldset>
             <fieldset><legend><span class="group-dot lab-dot"></span> Laboratorio</legend><div class="field-row vlan-row"><div><label for="lab-vlan">ID de VLAN</label><input id="lab-vlan" name="labVlan" type="number" min="2" max="1001" placeholder="20"></div><div><label for="lab-ports">Puertos de acceso</label><input id="lab-ports" name="labPorts" maxlength="200" placeholder="Fa0/3, Fa0/4"></div></div></fieldset>
             <label for="connections">Conexiones y requisitos <span class="optional">opcional</span></label><textarea id="connections" name="connections" rows="2" maxlength="2000" placeholder="Ej. Un switch con cuatro PC; dos por grupo."></textarea>
@@ -74,5 +73,6 @@
     <div id="typing-indicator" class="typing" role="status" hidden>NetAssist está preparando una respuesta…</div>
     <form id="chat-form" class="composer"><label class="sr-only" for="message-input">Tu consulta al asistente</label><textarea id="message-input" rows="2" maxlength="12000" required placeholder="Pregunta sobre tu práctica…" aria-describedby="chat-input-hint"></textarea><button class="button primary" id="send-button" type="submit" aria-label="Enviar mensaje">↑</button><p id="chat-input-hint">Enter envía · Shift + Enter añade una línea.</p></form>
   </section>
+  <dialog id="topology-dialog" aria-labelledby="topology-dialog-title"><div class="topology-dialog-heading"><h2 id="topology-dialog-title">Topología de tu práctica</h2><button id="close-topology" class="icon-button" type="button" aria-label="Cerrar topología">×</button></div><div class="topology-canvas"><img id="topology-image" alt="Topología propuesta"></div><div class="topology-actions"><a id="topology-download" class="button secondary" download="topologia-netassist.svg">Descargar imagen</a></div><p>Guía visual para Packet Tracer. No representa una red verificada.</p></dialog>
   <dialog id="contact-dialog"><div class="dialog-content"><button id="close-contact-button" class="icon-button" type="button" aria-label="Cerrar contacto">×</button><p class="eyebrow">AYUDA HUMANA</p><h2>Contactar al docente</h2><p id="contact-details"></p><button id="dialog-ok-button" class="button primary" type="button">Entendido</button></div></dialog>
 </body></html>

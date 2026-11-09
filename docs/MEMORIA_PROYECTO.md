@@ -356,3 +356,72 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
   respuesta real del asistente, salto de línea con Shift + Enter y envío del texto
   con Enter. Sintaxis JavaScript y formato del diff comprobados. Sin cambios de
   backend ni pruebas de configuración en laboratorio.
+
+## Topología visual dentro de Nexo (8 de noviembre de 2026)
+
+- El usuario aclaró que necesita solicitar la imagen dentro del chatbot de
+  NetAssist, también durante la demo. No pidió una imagen suelta en este chat.
+- Implementado: solicitudes como «Muéstrame una imagen de la topología de mi
+  práctica» producen una imagen SVG en la conversación, con vista ampliada y
+  enlace de descarga. Se añadió el acceso rápido Ver mi topología.
+- El servidor reconoce peticiones visuales del escenario y construye el diagrama
+  por código desde el caso abierto: un switch, dos VLAN y una PC por puerto,
+  hasta 32 PC. No usa un modelo de imágenes ni inventa IP. Solicita VLAN/puertos
+  faltantes y rechaza conflictos. Modelo e IOS pueden faltar para este dibujo;
+  los requisitos del generador de comandos no cambian.
+- La generación visual no necesita RAG ni un proveedor disponible. La IA sigue
+  atendiendo el resto del chat. No se implementó generación libre de topologías
+  nuevas desde descripciones, ni creación de .pkt o control de Packet Tracer.
+- La imagen se reconstruye desde datos estructurados validados, guardados junto
+  al mensaje. Se recupera al reabrir y se incluye en el informe HTML. No se
+  almacena SVG arbitrario del cliente, ni se cambia el esquema de SQLite.
+- Pasaron 43 pruebas automatizadas con dependencias de IA simuladas, incluidas
+  seis de topología: contrato del chat, datos faltantes/conflictivos, escape de
+  texto, recuperación e informe. Se comprobó sintaxis JavaScript y formato.
+- En navegador se cargó la demo correcta y se generó la imagen real desde el
+  botón de Nexo, con Fa0/1–Fa0/4 y VLAN 10/20, y se comprobó la vista ampliada.
+  El enlace de descarga SVG se añadió; la herramienta del navegador agotó la
+  espera del evento de descarga, por lo que esa descarga no se da por verificada
+  de extremo a extremo. Sin pruebas de red ni nueva práctica guardada en la base
+  real durante esta revisión. La API local quedó reiniciada con el índice real.
+
+## Respuestas breves de Nexo (8 de noviembre de 2026)
+
+- El usuario compartió una conversación con respuestas largas y pidió concisión
+  y precisión. Se ajustaron las instrucciones para responder primero la pregunta,
+  con 2–4 frases y un máximo orientativo de 90 palabras para dudas básicas.
+- Se pide omitir presentaciones repetidas, cierres automáticos, límites y
+  contactos innecesarios. Las definiciones no deben añadir configuraciones no
+  solicitadas. Se mantiene el detalle necesario para comandos completos, riesgos
+  pertinentes o explicaciones amplias pedidas por el usuario.
+- También se redujo la respuesta fija que acompaña a la topología, sin repetir
+  sus puertos y grupos en un párrafo. Se conserva el aviso de propuesta no verificada.
+- Dos consultas reales al proveedor con el prompt nuevo y un historial previo
+  produjeron respuestas de 47 y 39 palabras. Esto comprueba ejemplos puntuales;
+  las instrucciones no constituyen un límite rígido garantizado por código ni
+  una evaluación exhaustiva de exactitud. No se recortan respuestas a mitad.
+- Pasaron las seis pruebas de topología y la revisión de formato. No se amplió
+  el alcance de las herramientas ni se hicieron pruebas de redes en laboratorio.
+- Tras reiniciar la API exclusiva del proyecto, /health confirmó el índice real
+  listo. Una petición real a /chat («¿Qué es una VLAN?») devolvió una respuesta
+  de 44 palabras. La preferencia se aplica a las nuevas respuestas.
+
+## Retirada de versión de IOS del formulario (8 de noviembre de 2026)
+
+- El usuario pidió eliminar el campo Versión de IOS. Se retiró del formulario,
+  del resumen visible y del informe HTML. El modelo queda en una sola fila.
+- La versión deja de bloquear la generación y el diagnóstico del escenario
+  básico Cisco VLAN/acceso. Modelo, VLAN y puertos siguen siendo necesarios.
+  El chat no debe exigir IOS para esta práctica de Packet Tracer; puede pedirlo
+  en otros escenarios si una incompatibilidad o sintaxis lo requiere.
+- Se conserva el campo opcional de la API y la metadata de casos antiguos para
+  mantener compatibilidad, sin migrar ni borrar datos. Las prácticas nuevas y
+  los ejemplos no necesitan rellenarlo. La demo incompleta ahora omite el modelo.
+- Se actualizaron instrucciones de uso y pruebas: 44 pruebas automatizadas y los
+  seis escenarios de demo pasaron con proveedores simulados y almacenamiento de
+  pruebas temporal exclusivo. Se comprobó sintaxis JavaScript y formato del diff.
+- En navegador se verificó la ausencia del campo y la apertura de una práctica
+  con requisitos completos usando modelo, VLAN y puertos, sin versión de IOS.
+- Tras el reinicio de la API del proyecto, se comprobó en el navegador la
+  generación de comandos para VLAN 10/20 y Fa0/1–Fa0/4 sin versión de IOS.
+  El índice real quedó listo; no se ejecutaron esos comandos en Packet Tracer.

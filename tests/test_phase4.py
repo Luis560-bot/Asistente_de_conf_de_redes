@@ -74,7 +74,7 @@ class Diagnostics(unittest.TestCase):
     def test_unknown_command_and_incomplete_requirements(self):
         self.assertEqual(diagnose(case([("show running-config", PORT)]))["findings"], [])
         self.assertEqual(diagnose(case([("show interfaces Fa0/1,Gi0/2 switchport", PORT)]))["findings"], [])
-        c = case(); c.version = ""
+        c = case(); c.model = ""
         self.assertTrue(diagnose(c)["requirements"])
 
     def test_api_without_rag_and_payload_limits(self):

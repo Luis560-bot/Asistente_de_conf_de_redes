@@ -11,7 +11,8 @@ class ContextualChat(unittest.TestCase):
         service.initialize.side_effect = OSError("sin índice")
         with patch.object(main, "rag_service", service), patch.object(main, "llamar_llm", AsyncMock()) as model:
             with TestClient(main.app) as client:
-                response = client.post("/generar", json=self.context())
+                context = self.context(); context.pop("version")
+                response = client.post("/generar", json=context)
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json()["status"], "proposed")
                 self.assertFalse(response.json()["lab_verified"])

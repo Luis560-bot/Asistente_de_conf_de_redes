@@ -10,7 +10,7 @@
         "title": "DEMO · VLAN correctas · datos sintéticos",
         "vendor": "Cisco IOS",
         "model": "Catalyst 2960",
-        "version": "15.0(2)SE (ejemplo; confirmar en equipo real)",
+        "version": "",
         "connections": "Ejemplo sintético: un switch con cuatro PC. No procede de Packet Tracer.",
         "groups": [
           {
@@ -63,7 +63,7 @@
         "title": "DEMO · Puerto incorrecto · datos sintéticos",
         "vendor": "Cisco IOS",
         "model": "Catalyst 2960",
-        "version": "15.0(2)SE (ejemplo; confirmar en equipo real)",
+        "version": "",
         "connections": "Ejemplo sintético: un switch con cuatro PC. No procede de Packet Tracer.",
         "groups": [
           {
@@ -109,13 +109,13 @@
     },
     {
       "id": "incomplete",
-      "label": "Falta la versión de IOS",
-      "description": "Debe solicitar la versión y bloquear los comandos de configuración.",
+      "label": "Falta el modelo del switch",
+      "description": "Debe solicitar el modelo y bloquear los comandos de configuración.",
       "synthetic": true,
       "case": {
-        "title": "DEMO · Versión pendiente",
+        "title": "DEMO · Modelo pendiente",
         "vendor": "Cisco IOS",
-        "model": "Catalyst 2960",
+        "model": "",
         "version": "",
         "connections": "Ejemplo sintético: un switch con cuatro PC. No procede de Packet Tracer.",
         "groups": [
@@ -148,7 +148,7 @@
         "title": "DEMO · Puerto compartido",
         "vendor": "Cisco IOS",
         "model": "Catalyst 2960",
-        "version": "15.0(2)SE (ejemplo; confirmar en equipo real)",
+        "version": "",
         "connections": "Ejemplo sintético: un switch con cuatro PC. No procede de Packet Tracer.",
         "groups": [
           {
@@ -180,7 +180,7 @@
         "title": "DEMO · Salida paginada",
         "vendor": "Cisco IOS",
         "model": "Catalyst 2960",
-        "version": "15.0(2)SE (ejemplo; confirmar en equipo real)",
+        "version": "",
         "connections": "Ejemplo sintético: un switch con cuatro PC. No procede de Packet Tracer.",
         "groups": [
           {
@@ -217,7 +217,7 @@
         "title": "DEMO · Captura posterior corregida",
         "vendor": "Cisco IOS",
         "model": "Catalyst 2960",
-        "version": "15.0(2)SE (ejemplo; confirmar en equipo real)",
+        "version": "",
         "connections": "Ejemplo sintético: un switch con cuatro PC. No procede de Packet Tracer.",
         "groups": [
           {

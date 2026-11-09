@@ -17,6 +17,7 @@ from .cases import CaseStore, html_report
 from .llm import MENSAJE_FALLBACK, llamar_llm
 from .generator import generate
 from .diagnostics import diagnose
+from .topology import Topology, build_topology, render_svg, requests_topology
 from .rag import RagService, formatear_contexto
 
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +54,7 @@ class Mensaje(BaseModel):
 
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=12000)
+    topology: Topology | None = None
 
 
 class GrupoVlan(BaseModel):
@@ -92,6 +94,8 @@ class RespuestaChat(BaseModel):
 
     reply: str
     contact: str
+    topology: Topology | None = None
+    topology_svg: str | None = None
 
 
 class GuardarCaso(BaseModel):
@@ -205,7 +209,12 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
     if solicitud.messages[-1].role != "user":
         raise HTTPException(status_code=422, detail="El último mensaje debe ser del usuario.")
 
-    mensajes = [mensaje.model_dump() for mensaje in solicitud.messages]
+    if requests_topology(solicitud.messages[-1].content):
+        topology, reply = build_topology(solicitud.context)
+        return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, topology=topology,
+                             topology_svg=render_svg(topology) if topology else None)
+
+    mensajes = [{"role": mensaje.role, "content": mensaje.content} for mensaje in solicitud.messages]
     try:
         if request.app.state.rag_error is not None:
             raise RuntimeError("El índice RAG no está disponible.")
@@ -235,3 +244,10 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
     except Exception as error:
         logger.exception("No se pudo completar la solicitud de chat.")
         return RespuestaChat(reply=MENSAJE_FALLBACK, contact=SUPPORT_CONTACT)
+
+
+@app.post("/topologia/imagen")
+async def imagen_topologia(topology: Topology):
+    """Reconstruye imágenes del historial guardado sin archivos ni proveedores."""
+    return Response(render_svg(topology), media_type="image/svg+xml",
+                    headers={"Content-Security-Policy": "default-src 'none'"})
