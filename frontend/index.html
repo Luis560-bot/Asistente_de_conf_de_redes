@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101e2c"><title>NetAssist | Laboratorio de redes</title>
-  <link rel="stylesheet" href="style.css?v=config-chat"><script src="app.js?v=config-chat" defer></script>
+  <link rel="stylesheet" href="style.css?v=chat-images"><script src="app.js?v=chat-images" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -72,7 +72,13 @@
     <div class="chat-config-action"><span>Configuración inicial</span><button id="chat-config-button" type="button" class="button secondary">Preparar comandos</button></div>
     <div id="messages" class="messages" aria-live="polite" aria-label="Mensajes"></div>
     <div id="typing-indicator" class="typing" role="status" hidden>NetAssist está preparando una respuesta…</div>
-    <form id="chat-form" class="composer"><label class="sr-only" for="message-input">Tu consulta al asistente</label><textarea id="message-input" rows="2" maxlength="12000" required placeholder="Pregunta sobre tu práctica…" aria-describedby="chat-input-hint"></textarea><button class="button primary" id="send-button" type="submit" aria-label="Enviar mensaje">↑</button><p id="chat-input-hint">Enter envía · Shift + Enter añade una línea.</p></form>
+    <form id="chat-form" class="composer">
+      <div id="image-preview" class="image-preview" hidden><img id="pending-image" alt="Captura que vas a enviar"><span id="image-name"></span><button id="remove-image" type="button" aria-label="Quitar captura adjunta">Quitar</button></div>
+      <input id="chat-image" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+      <button id="attach-image" type="button" class="icon-button attach-image" aria-label="Adjuntar captura de pantalla" title="Adjuntar captura PNG, JPG o WebP">＋</button>
+      <label class="sr-only" for="message-input">Tu consulta al asistente</label><textarea id="message-input" rows="2" maxlength="12000" placeholder="Pregunta o pega una captura…" aria-describedby="chat-input-hint image-status"></textarea><button class="button primary" id="send-button" type="submit" aria-label="Enviar mensaje">↑</button>
+      <p id="image-status" role="status" hidden></p><p id="chat-input-hint">Enter envía · Shift + Enter añade una línea · Ctrl+V pega una captura.</p>
+    </form>
   </section>
   <dialog id="topology-dialog" aria-labelledby="topology-dialog-title"><div class="topology-dialog-heading"><h2 id="topology-dialog-title">Topología de tu práctica</h2><button id="close-topology" class="icon-button" type="button" aria-label="Cerrar topología">×</button></div><div class="topology-canvas"><img id="topology-image" alt="Topología propuesta"></div><div class="topology-actions"><a id="topology-download" class="button secondary" download="topologia-netassist.svg">Descargar imagen</a></div><p>Guía visual para Packet Tracer. No representa una red verificada.</p></dialog>
   <dialog id="contact-dialog"><div class="dialog-content"><button id="close-contact-button" class="icon-button" type="button" aria-label="Cerrar contacto">×</button><p class="eyebrow">AYUDA HUMANA</p><h2>Contactar al docente</h2><p id="contact-details"></p><button id="dialog-ok-button" class="button primary" type="button">Entendido</button></div></dialog>

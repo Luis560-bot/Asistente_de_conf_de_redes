@@ -10,6 +10,12 @@ let history = [];
 let supportContact = "Contacta al docente o técnico responsable del laboratorio.";
 let busy = false;
 let topologyUrls = [];
+let pendingImage = null;
+let imageReading = false;
+let imageReadVersion = 0;
+let chatImagesSupported = false;
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 const messagesElement = $("messages");
 const inputElement = $("message-input");
 const chatPanel = $("chat-panel");
@@ -76,7 +82,60 @@ function renderMarkdown(text) {
 }
 
 
-function appendMessage(role, content, persist = true, topology = null, svg = null, suggestions = []) {
+function imageSource(image) {
+  return image && IMAGE_TYPES.includes(image.mime_type) && typeof image.data === "string"
+    && image.data.length <= 4 * MAX_IMAGE_BYTES / 3 && /^[A-Za-z0-9+/]+={0,2}$/.test(image.data)
+    ? `data:${image.mime_type};base64,${image.data}` : "";
+}
+function imageStatus(message = "") {
+  $("image-status").textContent = message; $("image-status").hidden = !message;
+}
+function renderPendingImage() {
+  $("image-preview").hidden = !pendingImage;
+  if (pendingImage) {
+    $("pending-image").src = imageSource(pendingImage);
+    $("image-name").textContent = pendingImage.name;
+  } else {
+    $("pending-image").removeAttribute("src"); $("image-name").textContent = "";
+  }
+}
+function clearPendingImage() {
+  imageReadVersion++; imageReading = false; pendingImage = null;
+  $("chat-image").value = ""; renderPendingImage(); imageStatus();
+}
+async function attachImage(file) {
+  if (busy || imageReading || !file) return;
+  if (!IMAGE_TYPES.includes(file.type)) { imageStatus("Usa una captura PNG, JPG o WebP."); return; }
+  if (!file.size || file.size > MAX_IMAGE_BYTES) { imageStatus("La captura debe pesar como máximo 3 MB."); return; }
+  if (history.filter(message => message.image).length >= 3) {
+    imageStatus("Ya hay 3 capturas en esta conversación. Limpia el chat para adjuntar otra."); return;
+  }
+  const version = ++imageReadVersion; imageReading = true; imageStatus("Preparando captura…");
+  try {
+    const source = await new Promise((resolve, reject) => {
+      const reader = new FileReader(); reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("No se pudo leer la captura.")); reader.readAsDataURL(file);
+    });
+    const image = new Image(); image.src = source; await image.decode();
+    if (image.naturalWidth * image.naturalHeight > 16_777_216 || Math.max(image.naturalWidth, image.naturalHeight) > 8192) {
+      throw new Error("Recorta la captura: el máximo es 16 megapíxeles.");
+    }
+    if (version !== imageReadVersion) return;
+    pendingImage = {mime_type: file.type, name: (file.name || "captura.png").slice(0, 120), data: source.slice(source.indexOf(",") + 1)};
+    renderPendingImage(); imageStatus(); inputElement.focus();
+  } catch (error) {
+    if (version === imageReadVersion) imageStatus(error.message || "La captura no es una imagen válida.");
+  } finally { if (version === imageReadVersion) imageReading = false; }
+}
+$("attach-image").addEventListener("click", () => { if (!busy) $("chat-image").click(); });
+$("chat-image").addEventListener("change", event => { attachImage(event.target.files[0]); event.target.value = ""; });
+$("remove-image").addEventListener("click", () => { if (!busy) clearPendingImage(); });
+chatPanel.addEventListener("paste", event => {
+  const item = [...(event.clipboardData?.items || [])].find(item => item.type.startsWith("image/"));
+  if (item) { event.preventDefault(); attachImage(item.getAsFile()); }
+});
+
+function appendMessage(role, content, persist = true, topology = null, svg = null, suggestions = [], image = null) {
   messagesElement.querySelectorAll(".chat-suggestions").forEach(item => item.remove());
   const article = document.createElement("article");
   article.className = `message message-${role}`;
@@ -84,6 +143,11 @@ function appendMessage(role, content, persist = true, topology = null, svg = nul
   bubble.className = "bubble";
   if (role === "assistant") bubble.innerHTML = renderMarkdown(content);
   else { const p = document.createElement("p"); p.textContent = content; bubble.append(p); }
+  if (role === "user" && imageSource(image)) {
+    const preview = document.createElement("img"); preview.className = "chat-image";
+    preview.src = imageSource(image); preview.alt = image.name || "Captura enviada";
+    bubble.append(preview);
+  }
   const meta = document.createElement("span");
   meta.className = "message-meta";
   meta.textContent = role === "assistant" ? "Nexo · NetAssist" : "Tú";
@@ -101,7 +165,7 @@ function appendMessage(role, content, persist = true, topology = null, svg = nul
     bubble.append(actions);
     messagesElement.scrollTop = messagesElement.scrollHeight;
   }
-  if (persist) history.push({role, content, ...(topology ? {topology} : {}), ...(suggestions.length ? {suggestions} : {})});
+  if (persist) history.push({role, content, ...(topology ? {topology} : {}), ...(suggestions.length ? {suggestions} : {}), ...(image ? {image} : {})});
 }
 async function appendTopology(bubble, topology, svg) {
   const figure = document.createElement("figure"); figure.className = "topology-figure";
@@ -146,6 +210,7 @@ async function appendTopology(bubble, topology, svg) {
 }
 $("close-topology").addEventListener("click", () => $("topology-dialog").close());
 function welcome() {
+  clearPendingImage();
   $("topology-dialog").close(); $("topology-image").removeAttribute("src");
   $("topology-download").removeAttribute("href");
   topologyUrls.forEach(url => URL.revokeObjectURL(url)); topologyUrls = [];
@@ -283,7 +348,7 @@ for (const id of ["review-command", "evidence-input"]) $(id).addEventListener("i
 });
 function setBusy(value) {
   busy = value;
-  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "chat-config-button", "diagnose-button"]) $(id).disabled = value;
+  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "chat-config-button", "diagnose-button", "attach-image", "chat-image", "remove-image"]) $(id).disabled = value;
   if (activeCase) $("save-evidence-button").disabled = value;
   for (const id of ["refresh-cases", "new-case"]) $(id).disabled = value;
   $("save-case").disabled = value;
@@ -299,23 +364,44 @@ inputElement.addEventListener("keydown", event => {
 });
 $("chat-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const content = inputElement.value.trim();
-  if (!content || busy) return;
-  appendMessage("user", content); inputElement.value = ""; setBusy(true);
+  const draft = inputElement.value.trim(), image = pendingImage;
+  if ((!draft && !image) || busy || imageReading) return;
+  const content = draft || "Revisa esta captura de mi práctica y explica lo que observas.";
+  const previousHistory = history.slice();
+  appendMessage("user", content, true, null, null, [], image);
+  clearPendingImage(); inputElement.value = ""; setBusy(true);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45000);
+  const visual = history.some(message => message.image);
+  const timer = setTimeout(() => controller.abort(), visual ? 75000 : 45000);
   try {
+    if (visual && !chatImagesSupported) {
+      const health = await fetch(`${API_BASE}/health`, {signal: AbortSignal.timeout(5000)});
+      chatImagesSupported = health.ok && (await health.json()).chat_images === true;
+      if (!chatImagesSupported) throw new Error("El servicio abierto todavía no admite capturas. Reinicia la API de NetAssist para activar la actualización.");
+    }
     const response = await fetch(`${API_BASE}/chat`, {
       method: "POST", headers: {"Content-Type":"application/json"}, signal: controller.signal,
       body: JSON.stringify({messages: history.slice(-40), context: activeCase})
     });
     const data = await response.json();
-    if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Respuesta no disponible");
+    if (!response.ok) {
+      const detail = typeof data.detail === "string" ? data.detail : data.detail?.[0]?.msg;
+      throw new Error(detail || "No se pudo enviar la consulta.");
+    }
+    if (data.image_analyzed === false) throw new Error("No se pudo analizar la captura. Vuelve a enviarla en unos instantes.");
+    if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Respuesta no disponible");
     if (typeof data.contact === "string" && data.contact.trim()) supportContact = data.contact;
     if (data.proposal) { proposalSnapshot = data.proposal; renderProposal(data.proposal); }
     appendMessage("assistant", data.reply, true, data.topology, data.topology_svg, data.suggestions || []);
-  } catch {
-    appendMessage("assistant", `No pude obtener una respuesta. Puedes volver a intentarlo; tu práctica sigue abierta. Contacto: ${supportContact}`, false);
+  } catch (error) {
+    history = previousHistory;
+    if (!inputElement.value) inputElement.value = draft;
+    pendingImage = image; renderPendingImage();
+    const visualError = ["AbortError", "TimeoutError"].includes(error.name)
+      ? "El análisis tardó demasiado. Tu captura está lista para reenviarla."
+      : error.name === "TypeError" ? "No se pudo contactar con el servicio de imágenes. Puedes volver a enviar tu captura." : error.message;
+    appendMessage("assistant", visual ? visualError
+      : `No pude obtener una respuesta. Puedes volver a intentarlo; tu práctica sigue abierta. Contacto: ${supportContact}`, false);
   } finally {
     clearTimeout(timer); setBusy(false);
     if (!chatPanel.hidden) inputElement.focus();
@@ -336,6 +422,7 @@ async function loadService() {
     const response = await fetch(`${API_BASE}/health`, {signal: AbortSignal.timeout(5000)});
     if (!response.ok) throw new Error();
     const data = await response.json();
+    chatImagesSupported = data.chat_images === true;
     status.textContent = data.rag_ready ? "Servicio conectado" : "Manuales no disponibles";
     status.classList.toggle("online", Boolean(data.rag_ready));
     status.classList.toggle("offline", !data.rag_ready);
@@ -461,7 +548,7 @@ $("saved-cases").addEventListener("click", async event => {
     $("review-command").value = activeCase.review_command; $("evidence-input").value = activeCase.evidence;
     $("proposal-checks").replaceChildren(); $("generation-status").textContent = ""; $("diagnosis-output").replaceChildren();
     renderCase(); renderEvidence(); welcome();
-    for (const message of history) appendMessage(message.role, message.content, false, message.topology, null, message.suggestions || []);
+    for (const message of history) appendMessage(message.role, message.content, false, message.topology, null, message.suggestions || [], message.image);
     if (proposalSnapshot) {
       renderProposal(proposalSnapshot);
       if (proposalSnapshot.commands && !history.some(message => message.role === "assistant" && message.content.includes(proposalSnapshot.commands))) {

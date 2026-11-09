@@ -1,0 +1,3 @@
+# Conservar los documentos tal como se generaron, sin convertir saltos de línea.
+*.pdf binary
+*.pptx binary

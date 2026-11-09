@@ -4,6 +4,31 @@
 
 Este documento conserva las decisiones de producto acordadas con el usuario. Es una referencia para continuar el proyecto; las fases siguientes describen trabajo previsto y no implican que esté implementado.
 
+## Estado vigente para continuar
+
+- Se prioriza una interfaz sencilla y con poco texto. Guardar y Vaciar están
+  junto al formulario; Mis prácticas se abre desde la navegación izquierda.
+- La configuración se solicita dentro de Nexo, en Configuración inicial →
+  Preparar comandos. El panel conserva requisitos y comprobaciones. El bloque
+  de comandos usa el generador validado por código y permite copiarlo.
+- La versión de IOS se retiró del formulario y no es requisito para el caso
+  básico de Packet Tracer. Se conserva como dato opcional compatible con casos
+  antiguos. El modelo, las VLAN y los puertos siguen siendo necesarios.
+- Nexo responde brevemente por defecto. Las sugerencias son opcionales y deben
+  relacionarse con la pregunta respondida; solo se envían al pulsarlas. Enter
+  envía el mensaje y Shift + Enter añade una línea.
+- El chat admite adjuntar o pegar capturas PNG, JPG y WebP para interpretación
+  visual con IA. No se incorporan automáticamente al contraste exacto de salidas.
+  La implementación nueva necesita reiniciar la API local que ya estaba abierta.
+- Nexo dibuja la topología del caso abierto, también en la demo: un switch,
+  dos VLAN y hasta 32 PC. Es un SVG generado por código, no un archivo .pkt ni
+  una generación libre de cualquier red. La aceptación real en Packet Tracer
+  y las pruebas de conectividad siguen pendientes.
+- La guía de inicio compartida usa frontend 5500 y API 8000, con dos terminales.
+  El equipo original usa frontend 5501 porque 5500 pertenece a otro servicio.
+  Las secciones históricas siguientes conservan la evolución y la evidencia;
+  sus requisitos anteriores quedan sustituidos por estas decisiones vigentes.
+
 ## Lo que se busca
 
 Convertir NetAssist en una aplicación web para preparar, explicar y contrastar prácticas de configuración de redes. El usuario debe poder iniciar una tarea desde formularios, sin tener que escribir primero al chat.
@@ -452,3 +477,63 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
   Preparar comandos en Nexo devuelve el bloque completo con Copiar y ofrece
   «¿Cómo compruebo que los puertos pertenecen a la VLAN correcta?». La API
   quedó reiniciada con el índice real y almacenamiento exclusivo del proyecto.
+
+## Inicio para otros equipos y publicación (8 de noviembre de 2026)
+
+- Un amigo intentó abrir la raíz de la API en 127.0.0.1:8000 y recibió
+  {"detail":"Not Found"}. También solicitó /frontend/presentacion.html desde
+  un servidor que ya servía frontend. Los registros mostraban inicio completo
+  de la API; esas rutas no corresponden a la página de NetAssist.
+- Se actualizó README.md con instalación en Windows, ruta de Descargas adaptable
+  al nombre real de la carpeta, entorno .venv sin activación, configuración local
+  y dos terminales desde la raíz del repositorio. Incluye macOS/Linux y cómo
+  volver a arrancar sin reinstalar dependencias.
+- La página se abre en http://localhost:5500/; el estado de la API se consulta
+  en http://127.0.0.1:8000/health. No se añade /frontend/presentacion.html.
+  Para usar 5501 deben coincidir el puerto del servidor web y FRONTEND_ORIGIN.
+  El frontend mantiene la API en 8000. No detener otros servicios para liberar
+  puertos: usar una alternativa cuando corresponda.
+- La guía aclara que cada equipo configura sus claves en .env; GitHub Secrets
+  no las instala en los equipos de los compañeros. Los fallos de telemetría
+  ChromaDB/PostHog observados no impidieron el inicio según los registros;
+  no se corrigieron las dependencias de telemetría en este trabajo.
+- Se comprobaron los enlaces locales del README, el archivo de entrada y la
+  coincidencia con .env.example. No se ha confirmado que el amigo completara
+  el arranque en su equipo. No se cambiaron servicios ni bases para esta guía.
+- Publicado en origin/elliot a petición del usuario: 85c6726 (topologías,
+  respuestas concisas y retirada de IOS), ebfd02f (configuración y sugerencias
+  en el chat) y 602143f (guía de inicio y rutas). Tras publicar 602143f, Git
+  indicó árbol limpio y coincidencia entre HEAD y origin/elliot.
+
+## Capturas en Nexo y presentación (8 de noviembre de 2026)
+
+- El usuario pidió admitir capturas de pantalla en el chatbot y retirar la
+  etiqueta «Copiar y pegar» del diagrama de arquitectura de la presentación.
+- Implementado: adjuntar con + o pegar con Ctrl+V, vista previa, retirada antes
+  de enviar, consulta solo con imagen o con texto y recuperación del borrador
+  ante fallos. Una imagen estática PNG/JPG/WebP por mensaje, 3 MB como máximo,
+  hasta 3 imágenes por conversación y 16 megapíxeles. La API comprueba contenido,
+  formato, tamaño y límites del cuerpo antes de aceptar los adjuntos.
+- Gemini recibe imagen y texto; Groq usa GROQ_VISION_MODEL separado del modelo
+  de texto, por defecto qwen/qwen3.8-27b, anunciado por la cuenta consultada.
+  Ambos proveedores leyeron correctamente la captura de prueba en llamadas
+  reales. Hubo un fallo HTTP inicial de Groq y un intento posterior correcto;
+  no se da por garantizada su disponibilidad permanente.
+- Las imágenes enviadas se guardan en el documento JSON del caso, se recuperan
+  en la conversación y se incluyen en informes HTML y JSON. No se modificó el
+  esquema de SQLite ni el almacenamiento de producción. La interpretación visual
+  es orientativa, no crea evidencia textual verificada ni prueba conectividad.
+- Pasaron 57 pruebas automatizadas con embeddings simulados, sintaxis JavaScript
+  y revisión de formato. En navegador se comprobaron adjuntar, pegar, quitar,
+  respuesta visual real, guardado/reapertura, límites de tipo y tamaño, vista
+  móvil y conservación del adjunto al simular una caída de visión.
+- La prueba de navegador usó una API aislada en 8001, RAG simulado e IA real.
+  Su SQLite se verificó dentro de .cache/image-ui-test/.data/netassist, separado
+  de la base de prácticas real. No hubo pruebas de laboratorio en Packet Tracer.
+- La revisión automática bloqueó el reinicio de la API existente en 8000 sin
+  dar un motivo específico. Quedó pendiente que el usuario reinicie su terminal
+  de API y recargue el frontend. La página detecta servicios anteriores para
+  impedir que una captura se envíe a un backend que solo entiende texto.
+- Se entregan revisiones PPTX y PDF en output/presentacion con sufijo
+  _actualizado, conservando las siete diapositivas y quitando la etiqueta
+  señalada. La retirada del texto del PPT no crea integración con Packet Tracer.

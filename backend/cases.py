@@ -134,6 +134,10 @@ def html_report(saved):
     sections.append("<h2>Conversación registrada</h2>")
     for message in doc["messages"]:
         sections.append(f"<p><strong>{safe(message['role'])}</strong></p><pre>{safe(message['content'])}</pre>")
+        if message.get("image"):
+            from .chat_images import ChatImage
+            image = ChatImage.model_validate(message["image"])
+            sections.append(f'<img alt="{safe(image.name)}" src="data:{image.mime_type};base64,{image.data}" style="max-width:100%;height:auto">')
         if message.get("topology"):
             from .topology import Topology, render_svg
             sections.append(render_svg(Topology.model_validate(message["topology"])))

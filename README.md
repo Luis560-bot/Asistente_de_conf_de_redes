@@ -324,6 +324,31 @@ otro servicio. Esa es una situación local: en tu equipo puedes seguir esta guí
 con **5500**, o elegir **5501** si 5500 está ocupado.
 Para el puerto local configurado se admiten tanto `localhost` como `127.0.0.1`.
 
+## Capturas de pantalla en Nexo
+
+Pulsa **+** junto al mensaje para adjuntar una captura, o pégala con **Ctrl+V**
+dentro del chat. Revisa la vista previa, escribe tu pregunta y envía. Puedes
+quitarla antes de enviarla, o enviar solo la imagen para pedir una revisión.
+Se admiten PNG, JPG y WebP estáticos de hasta **3 MB**, una imagen por mensaje
+y hasta **3 capturas por conversación**. Usa Limpiar chat para iniciar otra.
+
+Nexo envía la captura al proveedor de IA para interpretarla. Usa Gemini y,
+si falla, `GROQ_VISION_MODEL` como respaldo (por defecto `qwen/qwen3.8-27b`,
+que debe estar habilitado en la cuenta). Las consultas de texto mantienen
+`GROQ_MODEL`. Si no hay servicio de visión, conserva el adjunto para reintentarlo.
+
+Las capturas enviadas se conservan al **Guardar práctica**, se recuperan con
+el chat y aparecen en los informes HTML y JSON. No se crean bases nuevas ni
+se modifica el esquema de SQLite. Los adjuntos no enviados se descartan al
+limpiar el chat o cambiar de práctica.
+
+La lectura de una imagen es orientativa y puede omitir texto pequeño o borroso.
+No alimenta automáticamente el diagnóstico exacto de Comprobaciones ni prueba
+conectividad. El análisis por código sigue usando las salidas en texto.
+
+Referencias de implementación: [imágenes en Gemini](https://ai.google.dev/gemini-api/docs/image-understanding)
+y [visión en Groq](https://console.groq.com/docs/vision).
+
 ## Topología visual en el chat
 
 Abre una práctica o carga un escenario de demostración y pide a Nexo

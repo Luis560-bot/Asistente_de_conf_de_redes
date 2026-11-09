@@ -1055,7 +1055,7 @@ legend {
   padding:12px 15px 9px;
   border-top:1px solid var(--line);
   display:grid;
-  grid-template-columns:1fr 40px;
+  grid-template-columns:32px minmax(0,1fr) 40px;
   align-items:center;
   gap:8px;
 }
@@ -1077,6 +1077,14 @@ legend {
   margin:0;
   color:#8b9aa4;
 }
+
+.attach-image { color: var(--teal); padding: 0; font-size: 27px; }
+.image-preview { grid-column: 1/-1; display: flex; align-items: center; gap: 10px; min-width: 0; background: #f0f8f5; border: 1px solid #d2e6df; border-radius: 8px; padding: 8px; }
+.image-preview img { width: 76px; height: 56px; object-fit: contain; background: #fff; }
+.image-preview span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 11px; }
+.image-preview button { border: 0; background: transparent; color: var(--teal); font-size: 11px; cursor: pointer; }
+.chat-image { display: block; max-width: 100%; max-height: 340px; object-fit: contain; margin-top: 10px; border-radius: 5px; background: #fff; }
+.composer #image-status { color: #a04428; font-size: 11px; }
 
 dialog {
   padding:0;

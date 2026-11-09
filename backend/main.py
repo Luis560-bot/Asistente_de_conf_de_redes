@@ -7,14 +7,16 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from starlette.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .config import FRONTEND_ORIGINS, SUPPORT_CONTACT, ROOT_DIR
 from .cases import CaseStore, html_report
-from .llm import MENSAJE_FALLBACK, llamar_llm
+from .llm import MENSAJE_FALLBACK, MENSAJE_IMAGEN_NO_DISPONIBLE, llamar_llm
+from .chat_images import ChatImage, ChatBodyLimit, check_image_count
 from .generator import generate
 from .chat_actions import requests_configuration, configuration_reply, split_suggestion
 from .diagnostics import diagnose
@@ -41,6 +43,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="NetAssist API", version="1.0.0", lifespan=lifespan)
+app.add_middleware(ChatBodyLimit)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
@@ -50,13 +53,33 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, error):
+    # Evitar devolver contenido binario/base64 dentro del detalle de validación.
+    return JSONResponse(status_code=422, content={"detail": [
+        {key: item[key] for key in ("loc", "msg", "type") if key in item}
+        for item in error.errors()
+    ]})
+
+
 class Mensaje(BaseModel):
     """Mensaje permitido en el historial enviado por el navegador."""
 
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=12000)
+    content: str = Field(default="", max_length=12000)
+    image: ChatImage | None = None
     topology: Topology | None = None
     suggestions: list[str] = Field(default_factory=list, max_length=1)
+
+    @model_validator(mode="after")
+    def valid_content(self):
+        if self.image is not None and self.role != "user":
+            raise ValueError("Solo los mensajes del usuario pueden adjuntar capturas.")
+        if not self.content.strip() and self.image is None:
+            raise ValueError("Escribe una consulta o adjunta una captura.")
+        if not self.content.strip():
+            self.content = "Revisa esta captura de mi práctica y explica lo que observas."
+        return self
 
 
 class GrupoVlan(BaseModel):
@@ -90,6 +113,11 @@ class SolicitudChat(BaseModel):
     messages: list[Mensaje] = Field(min_length=1, max_length=60)
     context: ContextoPractica | None = None
 
+    @model_validator(mode="after")
+    def valid_images(self):
+        check_image_count(self.messages)
+        return self
+
 
 class RespuestaChat(BaseModel):
     """Respuesta uniforme para el frontend."""
@@ -100,6 +128,7 @@ class RespuestaChat(BaseModel):
     topology_svg: str | None = None
     proposal: dict | None = None
     suggestions: list[str] = Field(default_factory=list)
+    image_analyzed: bool | None = None
 
 
 class GuardarCaso(BaseModel):
@@ -108,6 +137,11 @@ class GuardarCaso(BaseModel):
     proposal_requested: bool = False
     diagnosis_requested: bool = False
     revision: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def valid_images(self):
+        check_image_count(self.messages)
+        return self
 
 
 def stored_document(data: GuardarCaso):
@@ -181,6 +215,7 @@ async def health(request: Request) -> dict[str, object]:
         "status": "ok",
         "rag_ready": request.app.state.rag_error is None,
         "index": request.app.state.rag_summary,
+        "chat_images": True,
     }
 
 
@@ -213,19 +248,23 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
     if solicitud.messages[-1].role != "user":
         raise HTTPException(status_code=422, detail="El último mensaje debe ser del usuario.")
 
-    if requests_topology(solicitud.messages[-1].content):
+    current_image = solicitud.messages[-1].image is not None
+    has_images = any(message.image is not None for message in solicitud.messages)
+    if not current_image and requests_topology(solicitud.messages[-1].content):
         topology, reply = build_topology(solicitud.context)
         return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, topology=topology,
                              topology_svg=render_svg(topology) if topology else None,
                              suggestions=["Dame la configuración inicial de esta práctica."] if topology else [])
 
-    if requests_configuration(solicitud.messages[-1].content):
+    if not current_image and requests_configuration(solicitud.messages[-1].content):
         reply, proposal, suggestions = configuration_reply(solicitud.context)
         return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, proposal=proposal, suggestions=suggestions)
 
-    mensajes = [{"role": mensaje.role, "content": mensaje.content} for mensaje in solicitud.messages]
+    mensajes = [{"role": mensaje.role, "content": mensaje.content,
+                 **({"image": mensaje.image.model_dump()} if mensaje.image else {})}
+                for mensaje in solicitud.messages]
     try:
-        if request.app.state.rag_error is not None:
+        if request.app.state.rag_error is not None and not has_images:
             raise RuntimeError("El índice RAG no está disponible.")
         consulta = next(
             mensaje.content for mensaje in reversed(solicitud.messages) if mensaje.role == "user"
@@ -246,14 +285,23 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
                 "La evidencia no reconocida no ha sido contrastada automáticamente.\nConsulta del usuario:\n"
                 + mensajes[-1]["content"]
             )
-        fragmentos = await run_in_threadpool(rag_service.buscar, consulta)
+        try:
+            fragmentos = (await run_in_threadpool(rag_service.buscar, consulta)
+                          if request.app.state.rag_error is None else [])
+        except Exception:
+            if not has_images:
+                raise
+            logger.warning("Manuales no disponibles para la consulta visual.")
+            fragmentos = []
         contexto = formatear_contexto(fragmentos)
         respuesta = await llamar_llm(mensajes, contexto)
         reply, suggestions = split_suggestion(respuesta)
-        return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, suggestions=suggestions)
+        return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, suggestions=suggestions,
+                             image_analyzed=(respuesta != MENSAJE_IMAGEN_NO_DISPONIBLE) if has_images else None)
     except Exception as error:
         logger.exception("No se pudo completar la solicitud de chat.")
-        return RespuestaChat(reply=MENSAJE_FALLBACK, contact=SUPPORT_CONTACT)
+        return RespuestaChat(reply=MENSAJE_IMAGEN_NO_DISPONIBLE if has_images else MENSAJE_FALLBACK,
+                             contact=SUPPORT_CONTACT, image_analyzed=False if has_images else None)
 
 
 @app.post("/topologia/imagen")
