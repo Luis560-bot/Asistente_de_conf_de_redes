@@ -1,7 +1,7 @@
 # Fase 3: generador de VLAN y acceso
 
 Implementado: `POST /generar`, generador reproducible de referencia para un
-switch Cisco IOS y dos grupos; botón «Generar configuración» en la práctica.
+switch Cisco IOS y dos grupos; bloque Configuración inicial → Preparar comandos dentro de Nexo.
 No necesita proveedores de IA ni RAG. La IA del chat explica la propuesta y
 acompaña el caso; no decide las reglas exactas ni ejecuta la configuración.
 
@@ -27,7 +27,7 @@ La fuente describe IOS real; su uso no demuestra compatibilidad con el simulador
 1. En Packet Tracer crea un laboratorio nuevo con un 2960 y cuatro PC.
    Conecta PC-A1 y PC-A2 a Fa0/1 y Fa0/2; PC-L1 y PC-L2 a Fa0/3 y Fa0/4.
 2. Obtén `show version`. Registra el modelo en el formulario,
-   VLAN 10 y 20 y los puertos anteriores. Genera y revisa los comandos.
+   VLAN 10 y 20 y los puertos anteriores. Pide los comandos a Nexo y revísalos.
 3. En el switch confirma que los puertos existen y están disponibles. Aplica la
    propuesta en la CLI. Registra cualquier comando rechazado y su mensaje.
 4. Ejecuta `show vlan brief` y `show interfaces Fa0/1 switchport` (repite para

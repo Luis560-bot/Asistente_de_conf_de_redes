@@ -425,3 +425,30 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
 - Tras el reinicio de la API del proyecto, se comprobó en el navegador la
   generación de comandos para VLAN 10/20 y Fa0/1–Fa0/4 sin versión de IOS.
   El índice real quedó listo; no se ejecutaron esos comandos en Packet Tracer.
+
+## Configuración en Nexo y preguntas relacionadas (8 de noviembre de 2026)
+
+- El usuario pidió retirar Generar configuración del panel y colocar la acción
+  dentro del chat. Se implementó un bloque permanente Configuración inicial con
+  Preparar comandos en Nexo. Los comandos se entregan en un bloque con Copiar.
+- La petición usa el generador existente por código y sus validaciones, sin
+  depender del proveedor ni de RAG. Los requisitos siguen en el formulario; el
+  panel conserva el resumen, estado y plan de comprobación. Los comandos y sus
+  resultados solicitados se conservan al guardar/reabrir y en el informe.
+- El usuario aclaró que las sugerencias deben relacionarse con la pregunta
+  respondida. Se añadió una continuación opcional en un botón separado: el
+  proveedor propone la pregunta según la consulta; no se agrega siempre una
+  invitación genérica a configurar ni se afirma que la duda quedó resuelta.
+- La topología puede ofrecer preparar los comandos de ese mismo caso; después
+  de los comandos se ofrece comprobar los puertos y las VLAN. Las sugerencias
+  se envían solo al pulsarlas, se ocultan al comenzar otra pregunta y se guardan
+  con el mensaje. No hay consultas ni acciones automáticas por mostrarlas.
+- Pasaron 48 pruebas automatizadas, incluyendo generación desde el chat sin
+  proveedor, datos faltantes/conflictivos y separación de respuesta/sugerencia.
+  En dos consultas reales, VLAN sugirió asignar un puerto y /24 sugirió asignar
+  una IP en esa red. La pertinencia generativa es puntual, no está garantizada
+  por esas pruebas. Sintaxis JavaScript y formato comprobados.
+- Verificado en navegador: ya no hay botón Generar configuración en el panel;
+  Preparar comandos en Nexo devuelve el bloque completo con Copiar y ofrece
+  «¿Cómo compruebo que los puertos pertenecen a la VLAN correcta?». La API
+  quedó reiniciada con el índice real y almacenamiento exclusivo del proyecto.

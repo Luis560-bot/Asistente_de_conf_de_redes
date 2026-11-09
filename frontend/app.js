@@ -76,7 +76,8 @@ function renderMarkdown(text) {
 }
 
 
-function appendMessage(role, content, persist = true, topology = null, svg = null) {
+function appendMessage(role, content, persist = true, topology = null, svg = null, suggestions = []) {
+  messagesElement.querySelectorAll(".chat-suggestions").forEach(item => item.remove());
   const article = document.createElement("article");
   article.className = `message message-${role}`;
   const bubble = document.createElement("div");
@@ -90,7 +91,17 @@ function appendMessage(role, content, persist = true, topology = null, svg = nul
   messagesElement.append(article);
   if (role === "assistant" && topology) appendTopology(bubble, topology, svg);
   messagesElement.scrollTop = messagesElement.scrollHeight;
-  if (persist) history.push(topology ? {role, content, topology} : {role, content});
+  if (role === "assistant" && suggestions.length) {
+    const actions = document.createElement("div"); actions.className = "chat-suggestions";
+    for (const question of suggestions.slice(0, 1)) {
+      const button = document.createElement("button"); button.type = "button";
+      button.textContent = question; button.dataset.nexoPrompt = question;
+      actions.append(button);
+    }
+    bubble.append(actions);
+    messagesElement.scrollTop = messagesElement.scrollHeight;
+  }
+  if (persist) history.push({role, content, ...(topology ? {topology} : {}), ...(suggestions.length ? {suggestions} : {})});
 }
 async function appendTopology(bubble, topology, svg) {
   const figure = document.createElement("figure"); figure.className = "topology-figure";
@@ -237,7 +248,7 @@ function applyForm(focus = true) {
   activeCase = nextCase; history = []; proposalSnapshot = null; diagnosisSnapshot = null;
   $("save-case").disabled = false;
   $("evidence-records").replaceChildren(); $("diagnosis-output").replaceChildren();
-  $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = "";
+  $("proposal-checks").replaceChildren(); $("generation-status").textContent = "";
   $("review-command").value = ""; $("evidence-input").value = "";
   $("evidence-status").textContent = "No hay evidencia aportada.";
   renderCase(); welcome(); activateTab(tabs[0]);
@@ -272,7 +283,7 @@ for (const id of ["review-command", "evidence-input"]) $(id).addEventListener("i
 });
 function setBusy(value) {
   busy = value;
-  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "generate-button", "diagnose-button"]) $(id).disabled = value;
+  for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "chat-config-button", "diagnose-button"]) $(id).disabled = value;
   if (activeCase) $("save-evidence-button").disabled = value;
   for (const id of ["refresh-cases", "new-case"]) $(id).disabled = value;
   $("save-case").disabled = value;
@@ -301,7 +312,8 @@ $("chat-form").addEventListener("submit", async (event) => {
     const data = await response.json();
     if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Respuesta no disponible");
     if (typeof data.contact === "string" && data.contact.trim()) supportContact = data.contact;
-    appendMessage("assistant", data.reply, true, data.topology, data.topology_svg);
+    if (data.proposal) { proposalSnapshot = data.proposal; renderProposal(data.proposal); }
+    appendMessage("assistant", data.reply, true, data.topology, data.topology_svg, data.suggestions || []);
   } catch {
     appendMessage("assistant", `No pude obtener una respuesta. Puedes volver a intentarlo; tu práctica sigue abierta. Contacto: ${supportContact}`, false);
   } finally {
@@ -340,22 +352,10 @@ for (const id of ["close-contact-button", "dialog-ok-button"]) $(id).addEventLis
 $("service-status").addEventListener("click", loadService);
 welcome(); loadService();
 
-$("generate-button").addEventListener("click", async () => {
-  if (!activeCase || busy) return;
-  setBusy(true);
-  $("generation-status").textContent = "Comprobando requisitos…";
-  try {
-    const response = await fetch(`${API_BASE}/generar`, {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(activeCase), signal: AbortSignal.timeout(15000)
-    });
-    if (!response.ok) throw new Error();
-    const proposal = await response.json();
-    proposalSnapshot = proposal;
-    renderProposal(proposal);
-  } catch {
-    $("generation-status").textContent = "No se pudo generar la propuesta. Revisa la conexión y vuelve a intentarlo.";
-  } finally { setBusy(false); }
+$("chat-config-button").addEventListener("click", () => {
+  if (busy) return;
+  inputElement.value = "Dame la configuración inicial de esta práctica.";
+  $("chat-form").requestSubmit();
 });
 
 function renderEvidence() {
@@ -386,7 +386,7 @@ $("diagnose-button").addEventListener("click", async () => {
 
 function renderProposal(proposal) {
     const safe = escapeHtml;
-    $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren();
+    $("proposal-checks").replaceChildren();
     if (proposal.status !== "proposed") {
       $("case-status").textContent = proposal.errors.length ? "Requisitos por corregir" : "Datos incompletos";
       $("generation-status").textContent = [...proposal.missing.map(x => `Falta: ${x}.`), ...proposal.errors].join(" ");
@@ -394,7 +394,7 @@ function renderProposal(proposal) {
     }
     $("case-status").textContent = "Propuesta generada";
     $("generation-status").textContent = "Comprobaciones de código superadas. Prueba en laboratorio pendiente.";
-    $("proposal-output").innerHTML = `<h3>Configuración de referencia · un switch</h3><p>${safe(proposal.explanation)}</p>${renderMarkdown("```ios\n" + proposal.commands + "\n```")}<h3>Reglas comprobadas por código</h3><ul>${proposal.validations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><h3>Antes de aplicar</h3><ul>${proposal.limitations.map(x => `<li>${safe(x)}</li>`).join("")}</ul><p>Después de revisar los resultados, guarda manualmente con <code>${safe(proposal.save_command)}</code>.</p><p>Fuente de la plantilla: <a href="${safe(proposal.sources[0].url)}" target="_blank" rel="noopener noreferrer">${safe(proposal.sources[0].title)}</a>. Comprueba su correspondencia con tu equipo.</p>`;
+
     $("proposal-checks").innerHTML = `<h3>Plan de comprobación · pendiente de ejecutar</h3><ul>${proposal.checks.map(x => `<li><code>${safe(x.command)}</code><p>${safe(x.expected)}</p></li>`).join("")}</ul><p>En los PC configura direcciones de una misma subred para cada grupo y subredes distintas entre grupos. Registra IP, máscara, origen, destino y resultado de ping: dentro de cada VLAN debe responder; entre VLAN no habrá comunicación sin enrutamiento. Un ping fallido por sí solo no demuestra aislamiento por VLAN.</p>`;
 }
 
@@ -459,10 +459,15 @@ $("saved-cases").addEventListener("click", async event => {
     const fields = {"case-title": activeCase.title, "device-model": activeCase.model, "connections": activeCase.connections, "admin-vlan": activeCase.groups[0].vlan, "admin-ports": activeCase.groups[0].ports, "lab-vlan": activeCase.groups[1].vlan, "lab-ports": activeCase.groups[1].ports};
     for (const [id, value] of Object.entries(fields)) $(id).value = value;
     $("review-command").value = activeCase.review_command; $("evidence-input").value = activeCase.evidence;
-    $("proposal-output").replaceChildren(); $("proposal-checks").replaceChildren(); $("generation-status").textContent = ""; $("diagnosis-output").replaceChildren();
+    $("proposal-checks").replaceChildren(); $("generation-status").textContent = ""; $("diagnosis-output").replaceChildren();
     renderCase(); renderEvidence(); welcome();
-    for (const message of history) appendMessage(message.role, message.content, false, message.topology);
-    if (proposalSnapshot) renderProposal(proposalSnapshot);
+    for (const message of history) appendMessage(message.role, message.content, false, message.topology, null, message.suggestions || []);
+    if (proposalSnapshot) {
+      renderProposal(proposalSnapshot);
+      if (proposalSnapshot.commands && !history.some(message => message.role === "assistant" && message.content.includes(proposalSnapshot.commands))) {
+        appendMessage("assistant", "Configuración de la práctica guardada:\n\n```ios\n" + proposalSnapshot.commands + "\n```\nPendiente de comprobar en Packet Tracer.", false);
+      }
+    }
     if (diagnosisSnapshot) renderDiagnosis(diagnosisSnapshot);
     else $("evidence-status").textContent = "Capturas recuperadas; puedes analizarlas.";
     activateTab(tabs[0]);
@@ -481,7 +486,7 @@ $("new-case").addEventListener("click", () => {
   $("case-heading").textContent = "Un espacio para construir"; $("case-status").textContent = "Sin práctica abierta";
   $("open-case-button").textContent = "Abrir práctica ↗";
   $("chat-context").textContent = "Sin práctica abierta"; $("launcher-context").textContent = "¿Vemos tu red juntos?";
-  for (const id of ["proposal-output", "proposal-checks", "diagnosis-output", "evidence-records"]) $(id).replaceChildren();
+  for (const id of ["proposal-checks", "diagnosis-output", "evidence-records"]) $(id).replaceChildren();
   for (const id of ["review-command", "evidence-input"]) { $(id).value = ""; $(id).disabled = true; }
   $("save-evidence-button").disabled = true; $("evidence-status").textContent = "No hay evidencia aportada.";
   $("storage-status").textContent = "Formulario vacío. Tus prácticas guardadas siguen en Mis prácticas.";
@@ -552,7 +557,7 @@ $("load-demo").addEventListener("click", () => {
   for (const id of ["export-html", "export-json"]) $(id).disabled = true;
   $("evidence-status").textContent = "Capturas sintéticas cargadas. Pulsa Analizar evidencia para contrastarlas.";
   $("storage-status").textContent = "Escenario de demostración abierto como práctica nueva, sin guardar.";
-  $("demo-status").textContent = `Datos sintéticos: ${scenario.description} Continúa con Generar configuración y Analizar evidencia.`;
+  $("demo-status").textContent = `Datos sintéticos: ${scenario.description} Pide la configuración a Nexo y pulsa Analizar evidencia.`;
 });
 loadDemoScenarios();
 

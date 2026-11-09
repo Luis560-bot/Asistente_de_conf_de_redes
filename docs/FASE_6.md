@@ -4,7 +4,7 @@
 
 Inicia NetAssist siguiendo README.md (API 8000, frontend 5501). No se requiere
 una clave de IA para generar comandos, contrastar capturas o guardar casos.
-El chat sí requiere proveedor y manuales disponibles. Usa un solo proceso de API.
+Las respuestas conceptuales del chat requieren proveedor y manuales; preparar comandos del caso funciona sin ellos. Usa un solo proceso de API.
 
 En «Demostración guiada» elige uno de los seis escenarios y pulsa **Cargar
 escenario**. Se abre como práctica nueva, sin guardado automático. Reemplazar
@@ -15,17 +15,17 @@ en `frontend/demo-cases.json`; todos están identificados como sintéticos.
 
 | Escenario | Acción | Resultado que se debe mostrar |
 | --- | --- | --- |
-| VLAN y acceso correctos | Generar; ir a Comprobaciones y analizar | Comandos para dos VLAN; 18 campos/fila contrastados sin discrepancias. No se declara conectividad verificada. |
+| VLAN y acceso correctos | Preparar comandos en Nexo; ir a Comprobaciones y analizar | Comandos para dos VLAN; 18 campos/fila contrastados sin discrepancias. No se declara conectividad verificada. |
 | Modo trunk y VLAN equivocada | Analizar evidencia | Fa0/1 muestra dos discrepancias y cita los campos Administrative Mode y Access Mode VLAN. |
-| Falta el modelo del switch | Generar | Solicita modelo; no entrega comandos de configuración. |
-| Puerto asignado a dos grupos | Generar | Bloquea el conflicto entre Fa0/1 y FastEthernet0/1. |
+| Falta el modelo del switch | Preparar comandos en Nexo | Solicita modelo; no entrega comandos de configuración. |
+| Puerto asignado a dos grupos | Preparar comandos en Nexo | Bloquea el conflicto entre Fa0/1 y FastEthernet0/1. |
 | Salida incompleta o paginada | Analizar evidencia | Evidencia insuficiente, sin hallazgos inventados; show vlan brief sigue pendiente. |
 | Corrección con captura posterior | Analizar y desplegar las capturas | Se conserva la captura antigua y se contrasta la más reciente; desaparecen las discrepancias corregidas. |
 
 Con el caso correcto, guarda la práctica, recarga y reábrela desde «Mis
 prácticas». Muestra requisitos, comandos, capturas y contraste recuperados.
 Descarga HTML y JSON, explicando que corresponden a la revisión guardada.
-Estos pasos pueden ejecutarse desde el formulario sin utilizar el chat.
+La preparación de comandos se realiza en Nexo; el formulario conserva requisitos, guardado y evidencia.
 
 Para explicar el papel de la IA, abre el chat y pregunta por qué se usa modo
 access. Una respuesta depende de los manuales y del proveedor; el diagnóstico

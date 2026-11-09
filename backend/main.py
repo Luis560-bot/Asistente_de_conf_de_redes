@@ -16,6 +16,7 @@ from .config import FRONTEND_ORIGINS, SUPPORT_CONTACT, ROOT_DIR
 from .cases import CaseStore, html_report
 from .llm import MENSAJE_FALLBACK, llamar_llm
 from .generator import generate
+from .chat_actions import requests_configuration, configuration_reply, split_suggestion
 from .diagnostics import diagnose
 from .topology import Topology, build_topology, render_svg, requests_topology
 from .rag import RagService, formatear_contexto
@@ -55,6 +56,7 @@ class Mensaje(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=12000)
     topology: Topology | None = None
+    suggestions: list[str] = Field(default_factory=list, max_length=1)
 
 
 class GrupoVlan(BaseModel):
@@ -96,6 +98,8 @@ class RespuestaChat(BaseModel):
     contact: str
     topology: Topology | None = None
     topology_svg: str | None = None
+    proposal: dict | None = None
+    suggestions: list[str] = Field(default_factory=list)
 
 
 class GuardarCaso(BaseModel):
@@ -212,7 +216,12 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
     if requests_topology(solicitud.messages[-1].content):
         topology, reply = build_topology(solicitud.context)
         return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, topology=topology,
-                             topology_svg=render_svg(topology) if topology else None)
+                             topology_svg=render_svg(topology) if topology else None,
+                             suggestions=["Dame la configuración inicial de esta práctica."] if topology else [])
+
+    if requests_configuration(solicitud.messages[-1].content):
+        reply, proposal, suggestions = configuration_reply(solicitud.context)
+        return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, proposal=proposal, suggestions=suggestions)
 
     mensajes = [{"role": mensaje.role, "content": mensaje.content} for mensaje in solicitud.messages]
     try:
@@ -240,7 +249,8 @@ async def chat(solicitud: SolicitudChat, request: Request) -> RespuestaChat:
         fragmentos = await run_in_threadpool(rag_service.buscar, consulta)
         contexto = formatear_contexto(fragmentos)
         respuesta = await llamar_llm(mensajes, contexto)
-        return RespuestaChat(reply=respuesta, contact=SUPPORT_CONTACT)
+        reply, suggestions = split_suggestion(respuesta)
+        return RespuestaChat(reply=reply, contact=SUPPORT_CONTACT, suggestions=suggestions)
     except Exception as error:
         logger.exception("No se pudo completar la solicitud de chat.")
         return RespuestaChat(reply=MENSAJE_FALLBACK, contact=SUPPORT_CONTACT)

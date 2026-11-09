@@ -129,7 +129,7 @@ El backend acepta `.txt` y `.pdf`, divide el texto en fragmentos de 500 palabras
 
 La sección **Demostración guiada** carga seis escenarios sintéticos: correcto,
 puerto incorrecto, modelo pendiente, conflicto de puertos, salida paginada y
-corrección posterior. Usa los botones habituales para generar y analizar.
+corrección posterior. Pide los comandos a Nexo y utiliza Analizar evidencia para el contraste.
 El guion, las mediciones y sus límites están en [docs/FASE_6.md](docs/FASE_6.md).
 
 Validación reproducible sin red ni claves:
@@ -174,7 +174,7 @@ VLAN y puertos después; el panel mostrará lo que falta. Pulsa
 **Abrir práctica** para trabajar sin escribir primero al chat. **Completar con un
 ejemplo** precarga un escenario ilustrativo que debes revisar.
 
-- **Configuración:** resumen de requisitos y datos pendientes. Pulsa **Generar configuración** para obtener comandos, explicaciones, reglas comprobadas y límites. El modelo es obligatorio; no se solicita versión de IOS. La compatibilidad requiere revisión manual.
+- **Configuración:** resumen de requisitos y datos pendientes. Abre Nexo y pulsa **Preparar comandos** en el bloque **Configuración inicial**. Los comandos aparecen en el chat con botón Copiar; el panel conserva el resumen y el plan de comprobación. El modelo es obligatorio; no se solicita versión de IOS. La compatibilidad requiere revisión manual.
 - **Comprobaciones:** incorpora una captura por comando y pulsa **Analizar evidencia**.
   Se contrastan `show vlan brief` y `show interfaces <puerto> switchport`; los
   hallazgos citan el fragmento y la captura. Conserva hasta 12 registros en la
@@ -218,3 +218,8 @@ Solicita VLAN y puertos faltantes y rechaza asignaciones en conflicto; modelo e
 IOS no son obligatorios para dibujar. No interpreta libremente inventarios desde
 texto ni asigna direcciones IP. Es una propuesta visual: no crea un archivo `.pkt`,
 no controla Packet Tracer y no demuestra conectividad.
+
+Las sugerencias de continuación de Nexo aparecen como un botón opcional relacionado
+con la pregunta recién respondida. No se envían automáticamente. Tras preparar
+los comandos, la continuación propone comprobar esa configuración; las consultas
+conceptuales usan una sugerencia del proveedor, que puede omitirse si no aporta.
