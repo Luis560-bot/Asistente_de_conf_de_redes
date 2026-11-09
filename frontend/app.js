@@ -180,11 +180,12 @@ function renderCase() {
   for (const id of ["review-command", "evidence-input", "save-evidence-button", "diagnose-button"]) $(id).disabled = false;
   $("evidence-input").placeholder = "Pega aquí la salida que obtuviste en Packet Tracer…";
 }
-$("case-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (busy) return;
+function applyForm(focus = true) {
+  if (busy || !$("case-form").reportValidity()) return false;
   const nextCase = readCase();
-  if (!nextCase.title) { $("form-error").textContent = "Escribe un nombre para la práctica."; return; }
+  if (!nextCase.title) { $("form-error").textContent = "Escribe un nombre para la práctica."; return false; }
+  if (!requirementsChanged()) return true;
+  if (activeCase && (history.length || activeCase.evidence_records.length) && !confirm("Cambiar el equipo o las VLAN reinicia la conversación y las capturas de esta práctica. ¿Aplicar los cambios?")) return false;
   $("form-error").textContent = "";
   // Una edición inicia una revisión del caso y descarta evidencia e historial antiguos.
   activeCase = nextCase; history = []; proposalSnapshot = null; diagnosisSnapshot = null;
@@ -194,8 +195,15 @@ $("case-form").addEventListener("submit", (event) => {
   $("review-command").value = ""; $("evidence-input").value = "";
   $("evidence-status").textContent = "No hay evidencia aportada.";
   renderCase(); welcome(); activateTab(tabs[0]);
-  $("case-heading").setAttribute("tabindex", "-1"); $("case-heading").focus();
-});
+  if (focus) { $("case-heading").setAttribute("tabindex", "-1"); $("case-heading").focus(); }
+  return true;
+}
+function requirementsChanged() {
+  const form = readCase();
+  return !activeCase || ["title", "model", "version", "connections", "vendor", "groups"].some(key => JSON.stringify(form[key]) !== JSON.stringify(activeCase[key]));
+}
+$("case-form").addEventListener("submit", event => { event.preventDefault(); applyForm(); });
+$("case-form").addEventListener("input", () => { $("storage-status").textContent = "Cambios sin guardar"; });
 $("example-button").addEventListener("click", () => {
   const example = {"case-title":"Separar Administración y Laboratorio", "device-model":"Catalyst 2960", "ios-version":"", "admin-vlan":"10", "admin-ports":"Fa0/1, Fa0/2", "lab-vlan":"20", "lab-ports":"Fa0/3, Fa0/4", "connections":"Un switch con cuatro PC, dos por grupo. Confirmar el modelo y la versión en Packet Tracer."};
   for (const [id, value] of Object.entries(example)) $(id).value = value;
@@ -220,12 +228,18 @@ function setBusy(value) {
   busy = value;
   for (const id of ["send-button", "new-chat-button", "open-case-button", "example-button", "generate-button", "diagnose-button"]) $(id).disabled = value;
   if (activeCase) $("save-evidence-button").disabled = value;
-  for (const id of ["refresh-cases", "load-case", "new-case"]) $(id).disabled = value;
-  $("save-case").disabled = value || !activeCase;
+  for (const id of ["refresh-cases", "new-case"]) $(id).disabled = value;
+  $("save-case").disabled = value;
+  for (const button of document.querySelectorAll("[data-open-case], [data-nexo-prompt]")) button.disabled = value;
   for (const id of ["export-html", "export-json"]) $(id).disabled = value || !savedCase;
   $("load-demo").disabled = value || !demoScenarios.length;
   $("typing-indicator").hidden = !value;
 }
+inputElement.addEventListener("keydown", event => {
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+  event.preventDefault();
+  if (!busy && !event.repeat) $("chat-form").requestSubmit();
+});
 $("chat-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const content = inputElement.value.trim();
@@ -355,32 +369,41 @@ async function storageRequest(path, options = {}) {
 }
 async function refreshCases() {
   const rows = await (await storageRequest("/casos")).json();
-  $("saved-cases").replaceChildren(new Option("Selecciona una práctica", ""));
-  for (const row of rows) $("saved-cases").add(new Option(`${row.title} · revisión ${row.revision}`, row.id));
-  if (savedCase) $("saved-cases").value = savedCase.id;
+  $("saved-cases").replaceChildren();
+  for (const row of rows) {
+    const card = document.createElement("article"); card.className = "saved-case-card";
+    const title = document.createElement("h3"); title.textContent = row.title;
+    const date = document.createElement("p");
+    date.textContent = `Guardada el ${new Date(row.updated_at).toLocaleDateString("es-PE")}`;
+    const button = document.createElement("button"); button.type = "button";
+    button.className = "button secondary"; button.textContent = "Abrir práctica";
+    button.dataset.openCase = row.id; button.disabled = busy;
+    card.append(title, date, button); $("saved-cases").append(card);
+  }
+  $("library-status").textContent = rows.length ? "" : "Aún no tienes prácticas guardadas. Crea una en Laboratorio y pulsa Guardar práctica.";
   return rows;
 }
 $("refresh-cases").addEventListener("click", async () => {
   if (busy) return; setBusy(true);
-  try { const rows = await refreshCases(); $("storage-status").textContent = `${rows.length} prácticas disponibles (se muestran las 100 más recientes).`; }
-  catch (error) { $("storage-status").textContent = error.message; }
+  try { await refreshCases(); }
+  catch (error) { $("library-status").textContent = error.message; }
   finally { setBusy(false); }
 });
 $("save-case").addEventListener("click", async () => {
-  if (!activeCase || busy) return; setBusy(true);
+  if (!applyForm(false)) return; setBusy(true);
   try {
     const payload = {case: activeCase, messages: history.slice(-60), proposal_requested: proposalSnapshot !== null, diagnosis_requested: diagnosisSnapshot !== null, revision: savedCase?.revision || null};
     const response = await storageRequest(savedCase ? `/casos/${savedCase.id}` : "/casos", {method: savedCase ? "PUT" : "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
     savedCase = await response.json();
-    $("storage-status").textContent = `Práctica guardada · revisión ${savedCase.revision}. Puedes reabrirla después de recargar. Solo se guardan los datos aplicados al caso.`;
+    $("storage-status").textContent = "Guardada en Mis prácticas.";
     try { await refreshCases(); } catch { $("storage-status").textContent += " No se pudo actualizar la lista."; }
   } catch (error) { $("storage-status").textContent = error.message; }
   finally { setBusy(false); }
 });
-$("load-case").addEventListener("click", async () => {
-  const id = $("saved-cases").value;
+$("saved-cases").addEventListener("click", async event => {
+  const id = event.target.closest("[data-open-case]")?.dataset.openCase;
   if (!id || busy) return;
-  if (activeCase && !confirm("Abrir otra práctica reemplaza el trabajo de esta pestaña que no hayas guardado. ¿Continuar?")) return;
+  if ((activeCase || $("case-title").value) && !confirm("Abrir otra práctica reemplaza el trabajo de esta pestaña que no hayas guardado. ¿Continuar?")) return;
   setBusy(true);
   try {
     const loaded = await (await storageRequest(`/casos/${id}`)).json();
@@ -397,21 +420,27 @@ $("load-case").addEventListener("click", async () => {
     if (diagnosisSnapshot) renderDiagnosis(diagnosisSnapshot);
     else $("evidence-status").textContent = "Capturas recuperadas; puedes analizarlas.";
     activateTab(tabs[0]);
-    $("storage-status").textContent = `Práctica recuperada · revisión ${savedCase.revision}. Los resultados corresponden a esa revisión guardada.`;
-  } catch (error) { $("storage-status").textContent = error.message; }
+    window.location.hash = "laboratorio";
+    showView();
+    $("setup-title").scrollIntoView({behavior: "smooth", block: "start"});
+    $("case-title").focus({preventScroll: true});
+    $("storage-status").textContent = "Práctica abierta. Puedes continuar donde la dejaste.";
+  } catch (error) { $("library-status").textContent = error.message; }
   finally { setBusy(false); }
 });
 $("new-case").addEventListener("click", () => {
-  if (busy || (activeCase && !confirm("Iniciar otra práctica descarta los cambios de esta pestaña que no hayas guardado. ¿Continuar?"))) return;
+  if (busy || ((activeCase || [...$("case-form").querySelectorAll("input, textarea")].some(field => field.value)) && !confirm("¿Vaciar la práctica actual? Las prácticas guardadas se conservan en Mis prácticas."))) return;
   activeCase = null; savedCase = null; history = []; proposalSnapshot = null; diagnosisSnapshot = null;
   $("case-form").reset(); $("case-content").hidden = true; $("empty-case").hidden = false;
   $("case-heading").textContent = "Un espacio para construir"; $("case-status").textContent = "Sin práctica abierta";
   $("open-case-button").textContent = "Abrir práctica ↗";
   $("chat-context").textContent = "Sin práctica abierta"; $("launcher-context").textContent = "¿Vemos tu red juntos?";
-  for (const id of ["proposal-checks", "diagnosis-output", "evidence-records"]) $(id).replaceChildren();
+  for (const id of ["proposal-output", "proposal-checks", "diagnosis-output", "evidence-records"]) $(id).replaceChildren();
   for (const id of ["review-command", "evidence-input"]) { $(id).value = ""; $(id).disabled = true; }
   $("save-evidence-button").disabled = true; $("evidence-status").textContent = "No hay evidencia aportada.";
-  $("storage-status").textContent = "Nueva práctica. Completa el formulario para abrirla.";
+  $("storage-status").textContent = "Formulario vacío. Tus prácticas guardadas siguen en Mis prácticas.";
+  $("generation-status").textContent = ""; $("form-error").textContent = ""; $("case-status").classList.remove("open");
+  inputElement.value = ""; $("case-title").focus();
   welcome(); setBusy(false); $("diagnose-button").disabled = true; activateTab(tabs[0]);
 });
 for (const format of ["html", "json"]) $(`export-${format}`).addEventListener("click", async () => {
@@ -425,7 +454,29 @@ for (const format of ["html", "json"]) $(`export-${format}`).addEventListener("c
   } catch (error) { $("storage-status").textContent = error.message; }
   finally { setBusy(false); }
 });
-refreshCases().then(rows => { $("storage-status").textContent = `${rows.length} prácticas guardadas. Guarda explícitamente los cambios que quieras conservar.`; }).catch(error => { $("storage-status").textContent = error.message; });
+function showView() {
+  const library = window.location.hash === "#mis-practicas";
+  $("laboratorio").hidden = library;
+  $("mis-practicas").hidden = !library;
+  $("current-view-title").textContent = library ? "Mis prácticas" : "Laboratorio";
+  document.title = `NetAssist | ${library ? "Mis prácticas" : "Laboratorio de redes"}`;
+  for (const link of document.querySelectorAll(".side-navigation a")) {
+    const selected = link.getAttribute("href") === (library ? "#mis-practicas" : "#laboratorio");
+    link.classList.toggle("nav-active", selected);
+    if (selected) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+}
+function navigateView() {
+  showView();
+  if (!$("mis-practicas").hidden) {
+    $("library-title").focus({preventScroll: true});
+    $("library-status").textContent = "Cargando prácticas…";
+    refreshCases().catch(error => { $("library-status").textContent = error.message; });
+  }
+}
+window.addEventListener("hashchange", navigateView);
+navigateView();
 
 async function loadDemoScenarios() {
   try {
@@ -463,5 +514,5 @@ messagesElement.addEventListener("click", event => {
   const button = event.target.closest("[data-nexo-prompt]");
   if (!button || busy) return;
   inputElement.value = button.dataset.nexoPrompt;
-  inputElement.focus();
+  $("chat-form").requestSubmit();
 });

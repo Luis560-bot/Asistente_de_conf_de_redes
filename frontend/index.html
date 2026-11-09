@@ -3,21 +3,26 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101e2c"><title>NetAssist | Laboratorio de redes</title>
-  <link rel="stylesheet" href="style.css?v=nexo"><script src="app.js?v=nexo" defer></script>
+  <link rel="stylesheet" href="style.css?v=menu-practicas"><script src="app.js?v=chat-enter" defer></script>
 </head>
 <body>
   <aside class="sidebar">
     <a class="brand" href="./"><span class="brand-mark">N<span>·</span></span><span>NetAssist<small>LABORATORIO DE REDES</small></span></a>
     <p class="nav-label">ESPACIO DE TRABAJO</p>
-    <a class="nav-active" href="#laboratorio"><span aria-hidden="true">▦</span> Laboratorio <span class="nav-dot"></span></a>
+    <nav class="side-navigation" aria-label="Navegación principal">
+      <a class="nav-link nav-active" href="#laboratorio" aria-current="page"><span aria-hidden="true">▦</span> Laboratorio <span class="nav-dot"></span></a>
+      <a class="nav-link" href="#mis-practicas"><span aria-hidden="true">▤</span> Mis prácticas <span class="nav-dot"></span></a>
+    </nav>
     <div class="sidebar-note"><span class="eyebrow">TU LABORATORIO EXTERNO</span><h2>Cisco Packet Tracer</h2><p>Prepara aquí tu práctica. Aplica los comandos en el simulador y vuelve con las salidas.</p><span class="manual-tag">Intercambio manual</span></div>
     <button id="contact-button" class="support-link" type="button">¿Necesitas ayuda? <span>Contactar al docente ↗</span></button>
   </aside>
-  <div class="workspace" id="laboratorio">
-    <header class="topbar"><span>Espacio de trabajo <span class="slash">/</span> <strong>Laboratorio</strong></span><button id="service-status" class="service-status" type="button" aria-live="polite" title="Volver a comprobar la conexión">Comprobando servicio…</button></header>
+  <div class="workspace">
+    <header class="topbar"><span>Espacio de trabajo <span class="slash">/</span> <strong id="current-view-title">Laboratorio</strong></span><button id="service-status" class="service-status" type="button" aria-live="polite" title="Volver a comprobar la conexión">Comprobando servicio…</button></header>
     <main>
+      <div id="laboratorio">
       <div class="page-heading"><div><p class="eyebrow">APRENDE · CONFIGURA · COMPRUEBA</p><h1>Tu próxima red empieza aquí.</h1><p>Organiza una práctica Cisco y entiende cada paso con tu asistente.</p></div><span class="scope-tag">CISCO IOS <span>VLAN + ACCESO</span></span></div>
-      <section class="card case-library" aria-label="Prácticas guardadas"><h2>Mis prácticas</h2><p>Guarda explícitamente antes de salir. Los campos editados se aplican al pulsar Actualizar práctica; las salidas se aplican al incorporarlas al caso.</p><div class="case-actions"><select id="saved-cases" aria-label="Prácticas guardadas"><option value="">Selecciona una práctica</option></select><button id="refresh-cases" type="button" class="button secondary">Actualizar lista</button><button id="load-case" type="button" class="button secondary">Abrir guardada</button><button id="new-case" type="button" class="button secondary">Nueva práctica</button><button id="save-case" type="button" class="button primary" disabled>Guardar práctica</button><button id="export-html" type="button" class="button secondary" disabled>Exportar informe HTML</button><button id="export-json" type="button" class="button secondary" disabled>Exportar JSON</button></div><p id="storage-status" role="status">Cargando prácticas…</p></section><section class="card case-library" aria-label="Demostración"><h2>Demostración guiada</h2><p>Escenarios con datos sintéticos. No representan una práctica ejecutada en Packet Tracer. Los comandos y el contraste se calculan con el servicio real al pulsar sus botones.</p><div class="case-actions"><select id="demo-scenario" aria-label="Escenario de demostración" disabled><option>Cargando escenarios…</option></select><button class="button secondary" id="load-demo" type="button" disabled>Cargar escenario</button></div><p id="demo-status" role="status"></p></section><div class="lab-grid">
+      <details class="card case-library demo-library"><summary>Probar con un ejemplo</summary><p>Datos de ejemplo, sin pruebas realizadas en Packet Tracer.</p><div class="case-actions"><select id="demo-scenario" aria-label="Escenario de demostración" disabled><option>Cargando escenarios…</option></select><button class="button secondary" id="load-demo" type="button" disabled>Cargar ejemplo</button></div><p id="demo-status" role="status"></p></details>
+      <div class="lab-grid">
         <section class="card setup-card" aria-labelledby="setup-title">
           <div class="section-heading"><span class="step-number">01</span><div><h2 id="setup-title">Prepara tu práctica</h2><p>Define el equipo y los dos grupos.</p></div></div>
           <form id="case-form">
@@ -30,8 +35,10 @@
             <label for="connections">Conexiones y requisitos <span class="optional">opcional</span></label><textarea id="connections" name="connections" rows="2" maxlength="2000" placeholder="Ej. Un switch con cuatro PC; dos por grupo."></textarea>
             <p id="form-error" class="error-text" role="alert"></p>
             <button class="button primary full-width" type="submit" id="open-case-button">Abrir práctica <span aria-hidden="true">↗</span></button>
+            <div class="practice-actions"><button id="save-case" type="button" class="button secondary">Guardar práctica</button><button id="new-case" type="button" class="button text-button">Vaciar</button></div>
+            <p id="storage-status" role="status"></p>
             <button class="button text-button full-width" type="button" id="example-button">Completar con un ejemplo</button>
-            <p class="privacy-note">Pulsa Guardar práctica para conservar el caso. Actualizar los requisitos reinicia su chat y evidencia hasta el próximo guardado. No ingreses claves ni contraseñas.</p>
+            <p class="privacy-note">Guardar conserva tu trabajo en Mis prácticas. Vaciar limpia este formulario.</p>
           </form>
         </section>
         <section class="card results-card" aria-labelledby="case-heading">
@@ -47,9 +54,15 @@
           </div>
           <div id="panel-checks" role="tabpanel" aria-labelledby="tab-checks" tabindex="0" hidden><div class="panel-body"><div id="proposal-checks"></div><h3>Recoge evidencia en Packet Tracer</h3><p>Ejecuta las comprobaciones en el simulador y pega aquí sus salidas. Incorpora una salida por comando. Analiza las capturas para contrastar VLAN y modo de acceso; esto no verifica conectividad.</p><label for="review-command">Comando que estás revisando</label><input id="review-command" maxlength="300" placeholder="Ej. show vlan brief" disabled><label for="evidence-input">Salida del equipo</label><textarea id="evidence-input" maxlength="8000" rows="10" placeholder="Abre una práctica para incorporar evidencia…" disabled></textarea><button class="button secondary" type="button" id="save-evidence-button" disabled>Incorporar al caso</button><button class="button primary" id="diagnose-button" type="button" disabled>Analizar evidencia</button><div id="evidence-records"></div><div id="diagnosis-output" aria-live="polite"></div><p id="evidence-status" class="field-hint" role="status">No hay evidencia aportada.</p></div></div>
           <div id="panel-sources" role="tabpanel" aria-labelledby="tab-sources" tabindex="0" hidden><div class="panel-body"><span class="eyebrow">MATERIAL DE CONSULTA</span><h3>Referencias del escenario</h3><p>Estas referencias están disponibles para la práctica. No indican qué fragmentos recuperó el asistente en una consulta concreta.</p><a class="source-card" href="https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960/software/release/15-2_1_e/configuration/guide/2960_scg/swvlan.html" target="_blank" rel="noopener noreferrer"><span class="source-icon">↗</span><div><strong>Cisco · Configuring VLANs</strong><p>Catalyst 2960 / 2960-S · IOS 15.2(1)E</p><small>Documentación oficial</small></div></a><div class="source-card"><span class="source-icon">≡</span><div><strong>Síntesis educativa local</strong><p>cisco_vlan_acceso.txt · VLAN y puertos de acceso.</p><small>Incluida en el corpus de NetAssist</small></div></div><p class="field-hint">Confirma siempre que la fuente corresponda al modelo y a la versión de tu equipo.</p></div></div>
+          <details class="report-options"><summary>Descargar práctica guardada</summary><div class="case-actions"><button id="export-html" type="button" class="button secondary" disabled>Informe HTML</button><button id="export-json" type="button" class="button secondary" disabled>Datos JSON</button></div></details>
           <footer class="results-footer"><span class="group-dot"></span> Una propuesta no equivale a una configuración verificada.</footer>
         </section>
       </div>
+      </div>
+      <section class="card case-library" aria-labelledby="library-title" id="mis-practicas" hidden>
+        <div class="library-heading"><div><h1 id="library-title" tabindex="-1">Mis prácticas</h1><p>Retoma una práctica guardada.</p></div><button id="refresh-cases" type="button" class="button text-button">Actualizar</button></div>
+        <div id="saved-cases" class="saved-case-grid"></div><p id="library-status" role="status">Cargando prácticas…</p>
+      </section>
       <p class="page-footer">NetAssist · Un laboratorio para entender lo que configuras.</p>
     </main>
   </div>
@@ -59,7 +72,7 @@
     <div class="chat-toolbar"><span><span class="nexo-presence" aria-hidden="true"></span> Tu compañero de laboratorio</span><button id="new-chat-button" type="button">Limpiar chat</button></div>
     <div id="messages" class="messages" aria-live="polite" aria-label="Mensajes"></div>
     <div id="typing-indicator" class="typing" role="status" hidden>NetAssist está preparando una respuesta…</div>
-    <form id="chat-form" class="composer"><label class="sr-only" for="message-input">Tu consulta al asistente</label><textarea id="message-input" rows="2" maxlength="12000" required placeholder="Pregunta sobre tu práctica…"></textarea><button class="button primary" id="send-button" type="submit" aria-label="Enviar mensaje">↑</button><p>Revisa las recomendaciones antes de aplicarlas.</p></form>
+    <form id="chat-form" class="composer"><label class="sr-only" for="message-input">Tu consulta al asistente</label><textarea id="message-input" rows="2" maxlength="12000" required placeholder="Pregunta sobre tu práctica…" aria-describedby="chat-input-hint"></textarea><button class="button primary" id="send-button" type="submit" aria-label="Enviar mensaje">↑</button><p id="chat-input-hint">Enter envía · Shift + Enter añade una línea.</p></form>
   </section>
   <dialog id="contact-dialog"><div class="dialog-content"><button id="close-contact-button" class="icon-button" type="button" aria-label="Cerrar contacto">×</button><p class="eyebrow">AYUDA HUMANA</p><h2>Contactar al docente</h2><p id="contact-details"></p><button id="dialog-ok-button" class="button primary" type="button">Entendido</button></div></dialog>
 </body></html>

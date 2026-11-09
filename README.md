@@ -182,8 +182,9 @@ ejemplo** precarga un escenario ilustrativo que debes revisar.
 - **Fuentes:** referencias disponibles para este escenario.
 - **Tu asistente:** chat contextual, minimizable y ampliable, conectado a `/chat`.
 
-Pulsa **Guardar práctica** para conservar el caso en SQLite y reabrirlo desde
-**Mis prácticas**. Recargar descarta cambios sin guardar; actualizar requisitos
+Pulsa **Guardar práctica**, junto al formulario, para conservar los campos actuales
+y el caso en SQLite. Reábrelo desde su tarjeta en **Mis prácticas**, en el menú izquierdo.
+**Vaciar** limpia el formulario y mantiene las prácticas guardadas. Recargar descarta cambios sin guardar; actualizar requisitos
 reinicia chat y evidencia en memoria. Consulta [fase 5](docs/FASE_5.md).
 El indicador de conexión permite volver a comprobar el servicio al pulsarlo.
 
@@ -198,3 +199,4 @@ Los registros permanecen en memoria hasta pulsar Guardar práctica; entonces se 
 
 En este equipo usa el puerto **5501** para el frontend y configura
 `FRONTEND_ORIGIN=http://localhost:5501`; el puerto 5500 pertenece a otro servicio.
+Para el puerto local configurado se admiten tanto `localhost` como `127.0.0.1`.

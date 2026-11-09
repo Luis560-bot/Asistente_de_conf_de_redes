@@ -295,3 +295,64 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
 - Se revisaron en navegador la vista de escritorio y móvil (390 px), el saludo,
   los accesos rápidos y la reapertura sin duplicados. Las animaciones respetan
   la preferencia de movimiento reducido. Se comprobó sintaxis JavaScript y SVG.
+
+## Simplificación de prácticas (8 de noviembre de 2026)
+
+- A petición del usuario, se prioriza una interfaz con menos texto y acciones
+  junto a la tarea. Guardar práctica y Vaciar están en Prepara tu práctica.
+- Mis prácticas presenta tarjetas de los casos guardados con una acción para
+  abrirlos. Guardar incluye los campos actuales del formulario sin exigir
+  Actualizar práctica antes; repetir el guardado actualiza el mismo caso.
+- Vaciar limpia el caso en memoria, previa confirmación si hay datos, y conserva
+  los registros guardados. Cambiar requisitos con chat o capturas pide confirmar
+  el reinicio de ese contexto; guardar sin cambios conserva ese contenido.
+- Ejemplos y exportación quedan en secciones desplegables. Se mantiene el
+  almacenamiento exclusivo existente, sin migraciones ni cambios de backend.
+- Comprobado en navegador: guardar un formulario incompleto, editar y volver a
+  guardar sin duplicar la tarjeta, recargar, reabrir los datos editados y vaciar
+  conservando las tarjetas. Se creó un caso identificado como prueba de interfaz
+  con datos sintéticos. No se realizaron pruebas de red en Packet Tracer.
+
+## Mis prácticas en la navegación lateral (8 de noviembre de 2026)
+
+- El usuario pidió retirar Mis prácticas del contenido del laboratorio y acceder
+  desde el menú izquierdo. Se implementaron vistas separadas de Laboratorio y
+  Mis prácticas, con enlace activo y navegación por fragmento de URL.
+- Cambiar entre vistas conserva el formulario y el caso en memoria. Las tarjetas
+  guardadas se consultan en la biblioteca; abrir una regresa al laboratorio.
+  Guardar y Vaciar permanecen junto al formulario. En móvil ambos accesos siguen
+  disponibles en la navegación superior adaptable.
+- Comprobado en navegador: ausencia del bloque en Laboratorio, apertura de la
+  biblioteca desde el menú, carga de tarjetas y conservación de un borrador al
+  regresar. Sintaxis JavaScript y formato del diff comprobados. Sin cambios de
+  backend, almacenamiento ni pruebas de redes.
+
+## Conexión local del navegador (8 de noviembre de 2026)
+
+- Se reprodujo el error del chat al abrir el frontend en 127.0.0.1:5501:
+  la petición previa de CORS devolvía HTTP 400, mientras localhost:5501
+  devolvía HTTP 200. La configuración autorizaba solo este último origen.
+- Se admiten ambos nombres de loopback para el esquema y puerto configurados.
+  Otros puertos, hosts y esquemas siguen bloqueados; un origen externo
+  configurado conserva exclusivamente su autorización explícita.
+- Pasaron 37 pruebas automatizadas, incluidas dos nuevas de CORS. RAG y
+  proveedores se simularon en las unitarias. Se reinició únicamente la API
+  del proyecto, verificando antes sus rutas de almacenamiento exclusivo.
+- Tras el reinicio, ambos orígenes devolvieron HTTP 200 en la petición previa.
+  El índice real quedó listo (tres archivos y tres fragmentos). Una consulta
+  HTTP real a /chat con contexto sintético devolvió respuesta de Nexo en 4,66 s
+  y el encabezado correcto para 127.0.0.1:5501. Esto verifica transporte y
+  disponibilidad puntual, no exactitud técnica ni configuración en laboratorio.
+
+## Envío directo del chat (8 de noviembre de 2026)
+
+- Por petición del usuario, las preguntas sugeridas ahora se envían al pulsarlas,
+  sustituyendo el comportamiento anterior de rellenar el cuadro para editar.
+- Enter envía el mensaje; Shift + Enter inserta una línea. La composición de
+  caracteres no provoca envío. Se conserva el botón de envío y el bloqueo de
+  envíos repetidos mientras hay una solicitud en curso; las sugerencias también
+  se deshabilitan durante esa espera.
+- Comprobado en navegador en 127.0.0.1:5501: envío de una sugerencia con un clic,
+  respuesta real del asistente, salto de línea con Shift + Enter y envío del texto
+  con Enter. Sintaxis JavaScript y formato del diff comprobados. Sin cambios de
+  backend ni pruebas de configuración en laboratorio.

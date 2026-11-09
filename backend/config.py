@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
@@ -42,6 +43,25 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "").strip()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "").strip()
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5500").strip()
+
+
+def frontend_origins(origin: str) -> list[str]:
+    """Admite los dos nombres de loopback solo en el puerto configurado."""
+    parsed = urlsplit(origin)
+    origins = [origin]
+    if (parsed.scheme in {"http", "https"}
+            and parsed.hostname in {"localhost", "127.0.0.1"}
+            and not parsed.username and not parsed.password
+            and parsed.path in {"", "/"} and not parsed.query and not parsed.fragment):
+        port = f":{parsed.port}" if parsed.port is not None else ""
+        for host in ["localhost", "127.0.0.1"]:
+            alias = f"{parsed.scheme}://{host}{port}"
+            if alias not in origins:
+                origins.append(alias)
+    return origins
+
+
+FRONTEND_ORIGINS = frontend_origins(FRONTEND_ORIGIN)
 SUPPORT_CONTACT = os.getenv(
     "SUPPORT_CONTACT", "Contacta al docente o técnico responsable del laboratorio."
 ).strip()

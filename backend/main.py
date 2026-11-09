@@ -12,7 +12,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from .config import FRONTEND_ORIGIN, SUPPORT_CONTACT, ROOT_DIR
+from .config import FRONTEND_ORIGINS, SUPPORT_CONTACT, ROOT_DIR
 from .cases import CaseStore, html_report
 from .llm import MENSAJE_FALLBACK, llamar_llm
 from .generator import generate
@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="NetAssist API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type"],
