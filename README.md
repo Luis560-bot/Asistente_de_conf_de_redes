@@ -4,6 +4,37 @@ Prototipo educativo de asistente de soporte para MikroTik RouterOS y Cisco IOS. 
 
 La evolución acordada es una aplicación web de laboratorio con formularios y chat contextual, comenzando por Cisco, VLAN y puertos de acceso. El objetivo, las seis fases, las prioridades y las restricciones de aislamiento de bases de datos se conservan en la [memoria del proyecto](docs/MEMORIA_PROYECTO.md). El [mockup HTML](frontend/mockup.html) representa la propuesta de interfaz.
 
+## Inicio rápido en este equipo (Windows / PowerShell)
+
+La ruta del proyecto es `E:\INGENIERIA DE SISTEMAS\Inteligencia artificial\trabajo\Asistente_de_conf_de_redes`.
+Con el entorno `.venv` y las dependencias ya instalados, abre **dos terminales**
+y ejecuta cada bloque en su terminal. Si es la primera vez, prepara primero el
+entorno siguiendo el paso 2 de la guía de Windows de abajo, desde esta ruta.
+
+**Terminal 1 — backend (API, puerto 8000):**
+
+```powershell
+cd "E:\INGENIERIA DE SISTEMAS\Inteligencia artificial\trabajo\Asistente_de_conf_de_redes"
+$env:FRONTEND_ORIGIN = "http://localhost:5501"
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Espera a que aparezca `Application startup complete`. Comprueba el estado en
+[http://127.0.0.1:8000/health](http://127.0.0.1:8000/health).
+
+**Terminal 2 — frontend (página web, puerto 5501):**
+
+```powershell
+cd "E:\INGENIERIA DE SISTEMAS\Inteligencia artificial\trabajo\Asistente_de_conf_de_redes"
+.\.venv\Scripts\python.exe -m http.server 5501 --bind 127.0.0.1 --directory frontend
+```
+
+Abre **[http://localhost:5501/](http://localhost:5501/)** en el navegador y deja
+ambas terminales abiertas. Para detenerlas, pulsa **Ctrl + C** en cada una.
+Este equipo usa 5501 porque el puerto 5500 pertenece a otro servicio.
+La guía siguiente usa una ruta de ejemplo en Descargas y el puerto 5500 para
+otros equipos; adapta la ruta si guardaste el proyecto en otra carpeta.
+
 ## Estructura
 
 ```text
