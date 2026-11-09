@@ -28,74 +28,165 @@ netassist/
 └── README.md
 ```
 
-## Requisitos previos
+## Inicio en Windows (PowerShell o terminal de VS Code)
 
-- Python 3.11 o superior.
-- Acceso a Internet durante la instalación y la primera descarga del modelo de embeddings.
-- Claves de Google AI Studio y Groq para obtener respuestas de LLM y habilitar el failover.
+**La aplicación se abre en [http://localhost:5500/](http://localhost:5500/).**
+Necesitas dejar **dos terminales abiertas**: una para la API y otra para la página.
 
-## Instalación y ejecución
+| Servicio | Dirección | Para qué sirve |
+| --- | --- | --- |
+| Página de NetAssist | [http://localhost:5500/](http://localhost:5500/) | Aquí usas el formulario y el chatbot. |
+| Estado de la API | [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health) | Permite comprobar que el servicio está listo. |
+| Documentación de la API | [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Consulta técnica opcional. |
 
-1. Abre una terminal en la carpeta `netassist`.
-2. Crea y activa un entorno virtual:
+### 1. Ubícate en la carpeta del proyecto
 
-   **Windows PowerShell**
-   ```powershell
-   py -3.11 -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
+Descarga y descomprime el repositorio, o clónalo. La carpeta raíz es la que contiene
+**README.md**, **backend**, **frontend** y **.env.example**.
 
-   **macOS o Linux**
-   ```bash
-   python3.11 -m venv .venv
-   source .venv/bin/activate
-   ```
+Los comandos siguientes suponen que lo guardaste en Descargas con el nombre
+`Asistente_de_conf_de_redes`:
 
-3. Instala las dependencias del backend:
+```powershell
+cd "$env:USERPROFILE\Downloads\Asistente_de_conf_de_redes"
+```
 
-   ```bash
-   python -m pip install --upgrade pip
-   python -m pip install -r backend/requirements.txt
-   ```
+**Adapta esa ruta a tu equipo.** Si descargaste un ZIP de GitHub, la carpeta puede
+llamarse `Asistente_de_conf_de_redes-main` o `Asistente_de_conf_de_redes-elliot`;
+usa el nombre real. No ejecutes los comandos desde `backend` ni desde `frontend`:
+las instrucciones de esta guía parten siempre de la raíz.
 
-4. Copia `.env.example` como `.env` y configura las claves, modelos y contacto humano:
+### 2. Prepara el entorno (solo la primera vez)
 
-   **Windows PowerShell**
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+Instala Python 3.11 y verifica que está disponible:
 
-   **macOS o Linux**
-   ```bash
-   cp .env.example .env
-   ```
+```powershell
+py -3.11 --version
+```
 
-   Completa `GEMINI_API_KEY` y `GEMINI_MODEL` para Gemini, y `GROQ_API_KEY` y `GROQ_MODEL` para Groq. NetAssist intenta primero Gemini y usa Groq ante errores o timeout. Si un proveedor no se configura, se intentará el otro. Obtén las claves en [Google AI Studio](https://aistudio.google.com/) y [Groq Console](https://console.groq.com/). Los nombres de modelo son configurables; usa modelos habilitados para tus cuentas y APIs.
+Desde la raíz del proyecto, crea el entorno e instala sus dependencias:
 
-5. Coloca manuales `.txt` o `.pdf` en `docs/`. El prototipo incluye dos TXT de ejemplo. Los PDFs se indexan usando el texto que pueda extraerse de sus páginas; documentos escaneados requieren OCR previo.
-6. Inicia el backend desde la carpeta `netassist`:
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+```
 
-   ```bash
-   python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-   ```
+Usamos directamente el Python de `.venv`, por lo que **no necesitas activar el
+entorno ni cambiar la política de ejecución de PowerShell**. Si ya tenías un
+entorno llamado `venv`, estos comandos crean otro llamado `.venv` para esta guía.
 
-   Al primer inicio se descarga el modelo multilingüe de embeddings y se genera la base ChromaDB local en `backend/chroma_db/`. La inicialización puede tardar varios minutos. Comprueba el estado en `http://localhost:8000/health`.
+Crea la configuración local si todavía no existe:
 
-7. En otra terminal, sirve el frontend en el origen permitido:
+```powershell
+if (-not (Test-Path -LiteralPath ".env")) {
+    Copy-Item -LiteralPath ".env.example" -Destination ".env"
+}
+```
 
-   **Windows PowerShell**
-   ```powershell
-   cd frontend
-   py -3.11 -m http.server 5500
-   ```
+Abre `.env` y comprueba esta línea:
 
-   **macOS o Linux**
-   ```bash
-   cd frontend
-   python3 -m http.server 5500
-   ```
+```dotenv
+FRONTEND_ORIGIN=http://localhost:5500
+```
 
-8. Abre `http://localhost:5500` en el navegador. Si cambias el host o puerto del frontend, actualiza `FRONTEND_ORIGIN` en `.env` y reinicia el backend.
+Para las respuestas de IA de Nexo, configura `GEMINI_API_KEY` o `GROQ_API_KEY`
+y el modelo correspondiente. Se intenta Gemini primero y Groq como respaldo.
+Obtén tus claves en [Google AI Studio](https://aistudio.google.com/) y
+[Groq Console](https://console.groq.com/). Los modelos deben estar habilitados
+para tu cuenta. **Cada persona necesita sus claves locales:** `.env` no se sube
+al repositorio y los secretos de GitHub Actions no configuran la aplicación en
+el equipo de tus amigos.
+
+Sin claves puedes probar formularios, preparar comandos del caso desde Nexo,
+generar la topología, analizar evidencia y guardar prácticas. Las respuestas
+conceptuales de IA necesitan un proveedor configurado y los manuales disponibles.
+
+Necesitas Internet durante la instalación y la primera descarga del modelo de
+embeddings. El proyecto ya incluye manuales de ejemplo; no necesitas añadir
+archivos para empezar. Puedes incorporar otros `.txt` o `.pdf` en `docs/`;
+los PDF escaneados requieren OCR previo.
+
+### 3. Terminal 1: inicia la API
+
+```powershell
+cd "$env:USERPROFILE\Downloads\Asistente_de_conf_de_redes"
+$env:FRONTEND_ORIGIN = "http://localhost:5500"
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Espera a que aparezca **`Application startup complete`**. La primera carga puede
+tardar varios minutos mientras se descarga y prepara el modelo. Deja esta
+terminal abierta. El inicio crea o recupera el índice exclusivo del proyecto en
+`backend/chroma_db/`; las prácticas se guardan en `.data/netassist/cases.sqlite3`.
+
+Puedes comprobar el servicio en
+[http://127.0.0.1:8000/health](http://127.0.0.1:8000/health): debe mostrar
+`"status":"ok"` y, cuando los manuales estén listos, `"rag_ready":true`.
+
+### 4. Terminal 2: inicia la página
+
+Abre **otra terminal** y ejecuta:
+
+```powershell
+cd "$env:USERPROFILE\Downloads\Asistente_de_conf_de_redes"
+.\.venv\Scripts\python.exe -m http.server 5500 --bind 127.0.0.1 --directory frontend
+```
+
+Cuando aparezca `Serving HTTP`, abre **[http://localhost:5500/](http://localhost:5500/)**
+en el navegador. También puedes usar [http://127.0.0.1:5500/](http://127.0.0.1:5500/).
+
+**Escribe solo esa dirección:** no añadas `/frontend/` ni `/presentacion.html`.
+El servidor ya está sirviendo la carpeta `frontend` y abre su `index.html`.
+
+### Para volver a iniciar otro día
+
+Repite únicamente los pasos **3 y 4**, en dos terminales. No necesitas reinstalar
+las dependencias ni copiar `.env` cada vez. Para detener cada servicio, pulsa
+**Ctrl + C** en su terminal. Guarda tu práctica antes de cerrar o recargar la web.
+
+### Si aparece un error
+
+| Lo que ves | Qué hacer |
+| --- | --- |
+| `{"detail":"Not Found"}` al abrir `127.0.0.1:8000/` | Estás en la API. Abre la página en **http://localhost:5500/**. La ruta `/` de la API no tiene una página web. |
+| Error 404 en `/frontend/presentacion.html` | Abre **http://localhost:5500/**. Esa ruta no corresponde al inicio de la aplicación. |
+| `No module named uvicorn` | Instala las dependencias del paso 2 y usa `.\.venv\Scripts\python.exe`, como en los ejemplos. |
+| No se encuentra `.venv`, `backend` o `frontend` | Revisa el `cd`: debes estar en la raíz real del proyecto, con el nombre correcto de la carpeta descomprimida. |
+| Puerto ocupado / error 10048 | Puede haber otro servicio abierto. Si es otra instancia de NetAssist, usa esa instancia o detenla con Ctrl + C; si pertenece a otro programa, elige otro puerto. |
+| «Servicio sin conexión» | Mantén la API abierta, espera el fin del inicio y comprueba `/health`. Usa el mismo puerto de frontend en la terminal y en `FRONTEND_ORIGIN`. |
+| `Failed to send telemetry event ... capture()` | Es un fallo al enviar telemetría de ChromaDB. Si después aparece `Application startup complete`, ese mensaje no impidió iniciar la API. Comprueba `/health` para conocer el estado real. |
+| Sigues viendo una interfaz anterior | Guarda primero y recarga con **Ctrl + F5**. |
+
+**Si el puerto 5500 está ocupado**, usa 5501 en las dos terminales: en la primera
+cambia `$env:FRONTEND_ORIGIN` a `http://localhost:5501` antes de iniciar la API;
+en la segunda cambia `http.server 5500` a `http.server 5501`. Después abre
+[http://localhost:5501/](http://localhost:5501/). Reinicia la API si ya estaba abierta.
+El puerto 8000 de la API debe mantenerse porque el frontend lo utiliza.
+
+### macOS o Linux
+
+Desde la raíz, prepara el entorno una vez:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r backend/requirements.txt
+[ -f .env ] || cp .env.example .env
+```
+
+Configura `.env` como se explica arriba. En una terminal, desde la raíz:
+
+```bash
+FRONTEND_ORIGIN=http://localhost:5500 .venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+En otra terminal, también desde la raíz:
+
+```bash
+.venv/bin/python -m http.server 5500 --bind 127.0.0.1 --directory frontend
+```
+
+Abre [http://localhost:5500/](http://localhost:5500/) y deja ambos servicios abiertos.
 
 ## Endpoints
 
@@ -197,8 +288,9 @@ Desde fase 4 se añade `evidence_records` (hasta 12 objetos `{command, output}`)
 al contexto. El chat recibe el diagnóstico calculado y los pasos registrados.
 Los registros permanecen en memoria hasta pulsar Guardar práctica; entonces se conservan con el caso.
 
-En este equipo usa el puerto **5501** para el frontend y configura
-`FRONTEND_ORIGIN=http://localhost:5501`; el puerto 5500 pertenece a otro servicio.
+En el equipo original de desarrollo se usa **5501** porque 5500 pertenece a
+otro servicio. Esa es una situación local: en tu equipo puedes seguir esta guía
+con **5500**, o elegir **5501** si 5500 está ocupado.
 Para el puerto local configurado se admiten tanto `localhost` como `127.0.0.1`.
 
 ## Topología visual en el chat
