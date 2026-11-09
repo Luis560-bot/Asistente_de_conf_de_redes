@@ -6,6 +6,10 @@ Este documento conserva las decisiones de producto acordadas con el usuario. Es 
 
 ## Estado vigente para continuar
 
+- La entrada web abre la presentación de conceptos de redes. Ir al chat abre
+  `frontend/chat.html`, que conserva el laboratorio completo y Nexo contextual.
+  La API también abre la presentación desde `/` y `/Presentacion`, con sus
+  recursos públicos servidos bajo `/frontend`.
 - Se prioriza una interfaz sencilla y con poco texto. Guardar y Vaciar están
   junto al formulario; Mis prácticas se abre desde la navegación izquierda.
 - La configuración se solicita dentro de Nexo, en Configuración inicial →
@@ -537,3 +541,22 @@ la interfaz del navegador durante estas comprobaciones de proveedores.
 - Se entregan revisiones PPTX y PDF en output/presentacion con sufijo
   _actualizado, conservando las siete diapositivas y quitando la etiqueta
   señalada. La retirada del texto del PPT no crea integración con Packet Tracer.
+
+## Integración de main en elliot (8 de noviembre de 2026)
+
+- El usuario solicitó resolver el merge iniciado desde main y publicar elliot.
+  Se integró la presentación de main como entrada y se trasladó el laboratorio
+  vigente a `frontend/chat.html`, con enlace de regreso a la presentación.
+  Se conservan formularios, prácticas guardadas, generación, diagnóstico,
+  topologías y capturas en Nexo; el chat antiguo de main queda sustituido.
+- Las rutas `/` y `/Presentacion` de la API redirigen a la presentación bajo
+  `/frontend`, donde también se sirven CSS, JavaScript y el laboratorio. Cuando
+  se abre desde el puerto 8000, la interfaz usa el mismo origen para la API.
+  Se actualizó la guía de inicio para explicar la entrada al laboratorio.
+- Pasaron 59 pruebas automatizadas y los 10 recorridos de demostración, con
+  RAG/proveedores simulados y SQLite temporal exclusivo del proyecto. Las dos
+  pruebas nuevas comprueban las entradas de presentación, sus enlaces y recursos,
+  y el acceso al laboratorio actual. Sintaxis JavaScript y formato comprobados.
+- No se reiniciaron servicios existentes ni se usaron bases de producción.
+  No se realizaron pruebas de red en Packet Tracer ni una revisión visual en
+  navegador durante esta integración.

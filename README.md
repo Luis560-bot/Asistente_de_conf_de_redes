@@ -29,7 +29,8 @@ cd "E:\INGENIERIA DE SISTEMAS\Inteligencia artificial\trabajo\Asistente_de_conf_
 .\.venv\Scripts\python.exe -m http.server 5501 --bind 127.0.0.1 --directory frontend
 ```
 
-Abre **[http://localhost:5501/](http://localhost:5501/)** en el navegador y deja
+Abre **[http://localhost:5501/](http://localhost:5501/)** y pulsa **Ir al chat**
+para entrar al laboratorio. Deja
 ambas terminales abiertas. Para detenerlas, pulsa **Ctrl + C** en cada una.
 Este equipo usa 5501 porque el puerto 5500 pertenece a otro servicio.
 La guía siguiente usa una ruta de ejemplo en Descargas y el puerto 5500 para
@@ -52,6 +53,9 @@ netassist/
 │   └── cisco_ios_basico.txt
 ├── frontend/
 │   ├── index.html
+│   ├── presentacion.html
+│   ├── presentacion.css
+│   ├── chat.html
 │   ├── style.css
 │   └── app.js
 ├── .env.example
@@ -66,7 +70,7 @@ Necesitas dejar **dos terminales abiertas**: una para la API y otra para la pág
 
 | Servicio | Dirección | Para qué sirve |
 | --- | --- | --- |
-| Página de NetAssist | [http://localhost:5500/](http://localhost:5500/) | Aquí usas el formulario y el chatbot. |
+| Página de NetAssist | [http://localhost:5500/](http://localhost:5500/) | Presentación; pulsa Ir al chat para abrir el laboratorio. |
 | Estado de la API | [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health) | Permite comprobar que el servicio está listo. |
 | Documentación de la API | [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Consulta técnica opcional. |
 
@@ -168,7 +172,9 @@ Cuando aparezca `Serving HTTP`, abre **[http://localhost:5500/](http://localhost
 en el navegador. También puedes usar [http://127.0.0.1:5500/](http://127.0.0.1:5500/).
 
 **Escribe solo esa dirección:** no añadas `/frontend/` ni `/presentacion.html`.
-El servidor ya está sirviendo la carpeta `frontend` y abre su `index.html`.
+El servidor ya sirve `frontend`: `index.html` abre la presentación. Pulsa
+**Ir al chat** para abrir el laboratorio con Nexo, o entra directamente en
+[http://localhost:5500/chat.html](http://localhost:5500/chat.html).
 
 ### Para volver a iniciar otro día
 
@@ -180,7 +186,7 @@ las dependencias ni copiar `.env` cada vez. Para detener cada servicio, pulsa
 
 | Lo que ves | Qué hacer |
 | --- | --- |
-| `{"detail":"Not Found"}` al abrir `127.0.0.1:8000/` | Estás en la API. Abre la página en **http://localhost:5500/**. La ruta `/` de la API no tiene una página web. |
+| `{"detail":"Not Found"}` al abrir `127.0.0.1:8000/` | Una API antigua puede devolver ese error. Abre **http://localhost:5500/**. La versión actual también abre la presentación desde la raíz de la API. |
 | Error 404 en `/frontend/presentacion.html` | Abre **http://localhost:5500/**. Esa ruta no corresponde al inicio de la aplicación. |
 | `No module named uvicorn` | Instala las dependencias del paso 2 y usa `.\.venv\Scripts\python.exe`, como en los ejemplos. |
 | No se encuentra `.venv`, `backend` o `frontend` | Revisa el `cd`: debes estar en la raíz real del proyecto, con el nombre correcto de la carpeta descomprimida. |

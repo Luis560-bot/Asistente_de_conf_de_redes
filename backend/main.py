@@ -9,7 +9,8 @@ from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, model_validator
 
@@ -51,6 +52,17 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type"],
 )
+
+
+# La presentación y el laboratorio comparten sus recursos públicos.
+app.mount("/frontend", StaticFiles(directory=ROOT_DIR / "frontend", html=True), name="frontend")
+
+
+@app.get("/Presentacion", include_in_schema=False)
+@app.get("/", include_in_schema=False)
+async def presentation() -> RedirectResponse:
+    """Abre la presentación con rutas relativas de CSS y laboratorio válidas."""
+    return RedirectResponse(url="/frontend/presentacion.html")
 
 
 @app.exception_handler(RequestValidationError)

@@ -1,5 +1,5 @@
 "use strict";
-const API_BASE = "http://localhost:8000";
+const API_BASE = window.location.port === "8000" ? window.location.origin : "http://localhost:8000";
 const $ = (id) => document.getElementById(id);
 let activeCase = null;
 let savedCase = null;
