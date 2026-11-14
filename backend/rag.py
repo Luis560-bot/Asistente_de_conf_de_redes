@@ -1,20 +1,25 @@
 """Carga de manuales, fragmentación, indexado y búsqueda semántica local."""
 
 import logging
+import json
+from threading import RLock
+from uuid import uuid4
 from pathlib import Path
 from typing import Any
 
 import chromadb
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 
 from .config import (
+    ROOT_DIR,
     CHROMA_DIR,
     DOCS_DIR,
     EMBEDDING_MODEL,
     RAG_DISTANCE_THRESHOLD,
     RAG_TOP_K,
 )
+
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 COLLECTION_NAME = "manuales_netassist"
@@ -48,72 +53,88 @@ class RagService:
     """Mantiene el modelo de embeddings y la colección local de ChromaDB."""
 
     def __init__(self) -> None:
+        self._lock = RLock()
+        self._build_lock = RLock()
         self.modelo: SentenceTransformer | None = None
         self.cliente: Any | None = None
         self.coleccion: Any | None = None
 
     def initialize(self) -> dict[str, int]:
-        """Carga el modelo local y reconstruye el índice a partir de /docs."""
-        DOCS_DIR.mkdir(parents=True, exist_ok=True)
+        """Construye una generación completa antes de publicar el nuevo índice."""
+        with self._build_lock:
+            return self._initialize()
+
+    def _initialize(self) -> dict[str, int]:
+        esperado = ROOT_DIR / "backend" / "chroma_db"
+        if CHROMA_DIR.resolve() != esperado or any(
+            (getattr(p.lstat(), "st_file_attributes", 0) & 0x400) or p.is_symlink()
+            for p in (ROOT_DIR / "backend", CHROMA_DIR)
+            if p.exists()
+        ):
+            raise RuntimeError("El almacenamiento debe ser exclusivo de backend/chroma_db de NetAssist.")
         CHROMA_DIR.mkdir(parents=True, exist_ok=True)
-        self.modelo = SentenceTransformer(EMBEDDING_MODEL)
-        self.cliente = chromadb.PersistentClient(path=str(CHROMA_DIR))
-
-        self.cliente.get_or_create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"},
-        )
-        self.cliente.delete_collection(COLLECTION_NAME)
-        self.coleccion = self.cliente.create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"},
-        )
-
-        archivos = sorted(
-            ruta
-            for ruta in DOCS_DIR.rglob("*")
-            if ruta.is_file() and ruta.suffix.lower() in {".txt", ".pdf"}
-        )
-        documentos: list[str] = []
-        metadatos: list[dict[str, str | int]] = []
-        ids: list[str] = []
-
+        if self.cliente is None:
+            self.cliente = chromadb.PersistentClient(path=str(CHROMA_DIR))
+        manifest = CHROMA_DIR / "netassist_index.json"
+        # Recuperar el último índice publicado incluso si falla la reconstrucción.
+        if self.coleccion is None and manifest.exists():
+            estado = json.loads(manifest.read_text(encoding="utf-8"))
+            nombre = estado["collection"]
+            if not nombre.startswith(COLLECTION_NAME + "_"):
+                raise RuntimeError("Manifiesto de índice ajeno a NetAssist.")
+            modelo = SentenceTransformer(estado["model"])
+            coleccion = self.cliente.get_collection(nombre)
+            with self._lock:
+                self.modelo, self.coleccion = modelo, coleccion
+                self.resumen = estado["summary"]
+        modelo = SentenceTransformer(EMBEDDING_MODEL)
+        archivos = sorted(r for r in DOCS_DIR.rglob("*")
+                          if r.is_file() and r.suffix.lower() in {".txt", ".pdf"})
+        documentos, metadatos, ids = [], [], []
         for archivo in archivos:
-            texto = _leer_archivo(archivo)
-            for numero, fragmento in enumerate(fragmentar_texto(texto)):
+            for numero, fragmento in enumerate(fragmentar_texto(_leer_archivo(archivo))):
                 documentos.append(fragmento)
-                metadatos.append(
-                    {"archivo": str(archivo.relative_to(DOCS_DIR)), "fragmento": numero + 1}
-                )
+                metadatos.append({"archivo": str(archivo.relative_to(DOCS_DIR)), "fragmento": numero + 1})
                 ids.append(f"{archivo.relative_to(DOCS_DIR).as_posix()}-{numero}")
-
-        if documentos:
-            embeddings = self.modelo.encode(documentos, normalize_embeddings=True).tolist()
-            self.coleccion.add(
-                ids=ids,
-                documents=documentos,
-                metadatas=metadatos,
-                embeddings=embeddings,
-            )
-
-        logger.info(
-            "Índice RAG actualizado: %s archivo(s), %s fragmento(s).",
-            len(archivos),
-            len(documentos),
-        )
-        return {"archivos": len(archivos), "fragmentos": len(documentos)}
+        if not documentos:
+            raise ValueError("No hay documentación indexable; se conserva el índice anterior.")
+        embeddings = modelo.encode(documentos, normalize_embeddings=True).tolist()
+        nombre = COLLECTION_NAME + "_" + uuid4().hex
+        nueva = self.cliente.create_collection(name=nombre, metadata={"hnsw:space": "cosine"})
+        temporal = manifest.with_suffix(".tmp")
+        try:
+            for inicio in range(0, len(ids), 100):
+                fin = inicio + 100
+                nueva.add(ids=ids[inicio:fin], documents=documentos[inicio:fin],
+                          metadatas=metadatos[inicio:fin], embeddings=embeddings[inicio:fin])
+            if nueva.count() != len(documentos):
+                raise RuntimeError("El índice construido está incompleto.")
+            resumen = {"archivos": len(archivos), "fragmentos": len(documentos)}
+            temporal.write_text(json.dumps({"collection": nombre, "model": EMBEDDING_MODEL,
+                                           "summary": resumen}), encoding="utf-8")
+            with self._lock:
+                temporal.replace(manifest)
+                self.modelo, self.coleccion, self.resumen = modelo, nueva, resumen
+        except Exception:
+            # Solo elimina la generación creada por este intento, nunca la activa.
+            self.cliente.delete_collection(nombre)
+            raise
+        logger.info("Índice RAG publicado: %s", resumen)
+        return resumen
 
     def buscar(self, consulta: str) -> list[dict[str, str | float]]:
         """Devuelve hasta cuatro fragmentos que superen el umbral de relevancia."""
-        if self.modelo is None or self.coleccion is None:
+        with self._lock:
+            modelo, coleccion = self.modelo, self.coleccion
+        if modelo is None or coleccion is None:
             raise RuntimeError("El servicio RAG no está inicializado.")
-        if self.coleccion.count() == 0:
+        if coleccion.count() == 0:
             return []
 
-        embedding = self.modelo.encode([consulta], normalize_embeddings=True).tolist()
-        resultados = self.coleccion.query(
+        embedding = modelo.encode([consulta], normalize_embeddings=True).tolist()
+        resultados = coleccion.query(
             query_embeddings=embedding,
-            n_results=min(RAG_TOP_K, self.coleccion.count()),
+            n_results=min(RAG_TOP_K, coleccion.count()),
             include=["documents", "metadatas", "distances"],
         )
         documentos = resultados.get("documents", [[]])[0]

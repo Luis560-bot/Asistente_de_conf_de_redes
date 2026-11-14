@@ -6,3 +6,4 @@ pydantic==2.10.6
 chromadb==0.6.3
 sentence-transformers==3.4.1
 pypdf==5.3.1
+Pillow==13.0.0
