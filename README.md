@@ -70,7 +70,7 @@ cd "$env:USERPROFILE\Downloads\Asistente_de_conf_de_redes"
 .\.venv\Scripts\python.exe -m http.server 5500 --bind 127.0.0.1 --directory frontend
 ```
 
-Abre [http://localhost:5500/](http://localhost:5500/) en el navegador y pulsa
+Abre [http://localhost:5500/presentacion.html](http://localhost:5500/presentacion.html) en el navegador y pulsa
 **Ir al chat**. Para detener ambos servicios, pulsa `Ctrl+C` en sus terminales.
 
 Si el puerto 5500 está ocupado, usa 5501 en ambos comandos y cambia
@@ -96,7 +96,7 @@ En otra inicia el frontend:
 .venv/bin/python -m http.server 5500 --bind 127.0.0.1 --directory frontend
 ```
 
-Después abre [http://localhost:5500/](http://localhost:5500/).
+Después abre [http://localhost:5500/presentacion.html](http://localhost:5500/presentacion.html).
 
 ## Estructura
 
@@ -119,7 +119,6 @@ Asistente_de_conf_de_redes/
 │   ├── cisco_ios_basico.txt
 │   └── mikrotik_basico.txt
 ├── frontend/
-│   ├── index.html
 │   ├── presentacion.html
 │   ├── chat.html
 │   ├── app.js
